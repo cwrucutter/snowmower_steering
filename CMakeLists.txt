@@ -105,6 +105,7 @@ include_directories(
 
 ## Declare a cpp executable
 # add_executable(snowmower_steering_node src/snowmower_steering_node.cpp)
+add_executable(simple_steering src/simple_steering.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -114,6 +115,7 @@ include_directories(
 # target_link_libraries(snowmower_steering_node
 #   ${catkin_LIBRARIES}
 # )
+target_link_libraries(simple_steering ${catkin_LIBRARIES})
 
 #############
 ## Install ##
