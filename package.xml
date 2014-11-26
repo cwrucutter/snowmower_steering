@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <package>
   <name>snowmower_steering</name>
-  <version>0.0.0</version>
-  <description>The snowmower_steering package</description>
+  <version>0.1.1</version>
+  <description>The snowmower_steering package is the final step. It is here where we publish a Twist (forward and angular velocity) which gets passed down to the low level controller or the simulation.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="ggallin08@todo.todo">ggallin08</maintainer>
+  <maintainer email="gmattklein@gmail.com">Matthew Klein</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>TODO</license>
+  <license>BSD</license>
 
 
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
