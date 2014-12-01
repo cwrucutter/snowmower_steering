@@ -13,7 +13,7 @@ void goalPose_CB(const geometry_msgs::PoseStamped& msg){
 }
 
 int main(int argc, char** argv){
-  ros::init(argc, argv, "2Dpose_to_TF");
+  ros::init(argc, argv, "PoseStamped_to_TF");
   ros::NodeHandle nh;
 
   ros::Subscriber goalPose_sub = nh.subscribe("/move_base_simple/goal",1,goalPose_CB);
