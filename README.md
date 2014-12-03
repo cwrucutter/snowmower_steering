@@ -20,3 +20,10 @@ Currently for this to work, the Fixed Frame in rviz has to be `map_static`. Note
 This launch file launches a stdr simulator, slam_gmapping, simple_steering and PoseStamped_to_TF, and rviz with an associated config file. Sometimes opening rviz at the same time as everything else results in errors. If so, close everything and relaunch. It usually works for me every other time. You can also remove rviz from the launch file and run it separately.
 
 From rviz, press `g`, which is a keyboard short cut for clicking the button "2D Nav Goal". Then click anywhere on the rviz screen to guide the robot around the map.
+
+Note: gmapping and stdr_simulator need to be installed before this will work. Either compile from source or install using apt.
+
+```
+sudo apt-get install ros-indigo-stdr-simulator
+sudo apt-get install ros-indigo-gmapping
+```
