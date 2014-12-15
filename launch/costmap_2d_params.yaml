@@ -1,0 +1,55 @@
+# TF parameters
+global_frame: /map
+robot_base_frame: robot0
+
+# Basic Setup Parameters
+rolling_window: false
+track_unknown_space: false
+always_send_full_costmap: false
+#plugins: 
+update_frequency: 5.0
+publish_frequency: 1.0
+
+#Static Map parameters
+static_map: true
+map_topic: /map
+#unkown_cost_value: 
+#lethal_cost_value: 
+#track_unkown_space: 
+
+
+# Footprint parameters
+#footprint_topic: footprint
+footprint: [[-0.325, -0.325], [-0.325, 0.325], [0.325, 0.325], [0.46, 0.0], [0.325, -0.325]]
+footprint_padding: 0.01
+#robot_radius: 1.234
+lethal_cost_threshold: 100
+
+# Obstacle Layer parameters
+#origin_z: 
+#z_resolution: 
+#z_voxels: 
+#mark_threshold: 
+#unkown_threshold: 
+publish_voxel_map: false
+
+observation_sources: base_scan
+base_scan: {
+topic: /robot0/laser_0,
+sensor_frame: robot0_laser_0,
+observation_persistence: 0.0,
+expected_update_rate: 0.1,
+data_type: LaserScan,
+min_obstacle_height: 0.0,
+inf_is_valid: false,
+clearing: true,
+marking: true}
+max_obstacle_height: 2.0,
+obstacle_range: 2.5,
+raytrace_range: 3.0,
+track_unknown_space: true
+transform_tolerance: 0.2
+
+# Inflation Layer parameters
+cost_scaling_factor: 10.0
+inflation_radius: 0.55

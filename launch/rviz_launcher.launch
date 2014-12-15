@@ -1,0 +1,4 @@
+<launch>
+  <!-- Start rviz with corresponding config file -->
+  <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find snowmower_steering)/launch/stdr_gmapping_goalPose.rviz"/>
+</launch>

@@ -10,11 +10,4 @@
     <remap from="scan" to="/robot0/laser_0"/>
   </node>
 
-  <!-- Start rviz with corresponding config file -->
-  <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find snowmower_steering)/launch/stdr_gmapping_goalPose.rviz"/>
-
-  <!-- Start the PoseStamped_to_TF and simple_steering nodes -->
-  <node pkg="snowmower_steering" type="PoseStamped_to_TF" name="PoseStamped_to_TF" output="screen"/>
-  <node pkg="snowmower_steering" type="simple_steering" name="simple_steering" ouput="screen"/>
-
 </launch>
