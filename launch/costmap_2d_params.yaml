@@ -11,8 +11,8 @@ update_frequency: 5.0
 publish_frequency: 1.0
 
 #Static Map parameters
-static_map: false
-#map_topic: 
+static_map: true
+map_topic: /map
 #unkown_cost_value: 
 #lethal_cost_value: 
 #track_unkown_space: 
