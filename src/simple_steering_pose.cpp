@@ -59,7 +59,7 @@ int main(int argc, char** argv){
   while (nh.ok()){
     //Check for published message (update g_robotPose and g_goalPose)
     ros::spinOnce();
-    theta_r.data = (1/M_PI)*(2*acos(robotPose.orientation.w)); //Not sure if this is correct
+    theta_r.data = 0;// (1/M_PI)*(2*acos(robotPose.orientation.w)); //Not sure if this is correct
 
     x.data = (g_goalPose.position.x-g_robotPose.position.x)*cos(theta_r.data) + (g_goalPose.position.y-g_robotPose.position.y)*sin(theta_r.data);
 
