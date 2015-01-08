@@ -5,10 +5,12 @@ project(snowmower_steering)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  std_msgs
   geometry_msgs
   nav_msgs
   roscpp
   tf
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -45,11 +47,11 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
+ add_message_files(
+   FILES
 #   Message1.msg
-#   Message2.msg
-# )
+   CmdPose.msg
+ )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -66,10 +68,12 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   nav_msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   std_msgs
+   geometry_msgs
+   nav_msgs
+ )
 
 ###################################
 ## catkin specific configuration ##
@@ -83,6 +87,10 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES snowmower_steering
+  CATKIN_DEPENDS roscpp std_msgs geometry_msgs nav_msgs message_runtime tf
+#  DEPENDS system_lib
+
+
 #  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp tf
 #  DEPENDS system_lib
 )
@@ -107,6 +115,7 @@ include_directories(
 # add_executable(snowmower_steering_node src/snowmower_steering_node.cpp)
 add_executable(simple_steering src/simple_steering.cpp)
 add_executable(PoseStamped_to_TF src/PoseStamped_to_TF.cpp)
+add_executable(baskin_steering src/baskin_steering.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -118,6 +127,7 @@ add_executable(PoseStamped_to_TF src/PoseStamped_to_TF.cpp)
 # )
 target_link_libraries(simple_steering ${catkin_LIBRARIES})
 target_link_libraries(PoseStamped_to_TF ${catkin_LIBRARIES})
+target_link_libraries(baskin_steering ${catkin_LIBRARIES})
 
 #############
 ## Install ##
