@@ -51,6 +51,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
 #   Message1.msg
    CmdPose.msg
+   Obstacle.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -116,6 +117,7 @@ include_directories(
 add_executable(simple_steering src/simple_steering.cpp)
 add_executable(PoseStamped_to_TF src/PoseStamped_to_TF.cpp)
 add_executable(baskin_steering src/baskin_steering.cpp)
+add_executable(baskin_steering_test src/baskin_steering_test.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -128,6 +130,7 @@ add_executable(baskin_steering src/baskin_steering.cpp)
 target_link_libraries(simple_steering ${catkin_LIBRARIES})
 target_link_libraries(PoseStamped_to_TF ${catkin_LIBRARIES})
 target_link_libraries(baskin_steering ${catkin_LIBRARIES})
+target_link_libraries(baskin_steering_test ${catkin_LIBRARIES})
 
 #############
 ## Install ##
