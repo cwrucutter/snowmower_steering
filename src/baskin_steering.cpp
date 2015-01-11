@@ -16,15 +16,21 @@ bool new_route = false;
 bool new_obstacles = false;
 bool send_feedback = true;
 
+bool start_flag = false;
+bool end_flag = false;
+bool robot_flag = false;
+bool obstacle_flag = false;
+
 bool debug_mode = false;
+bool debug_methods = true;
 bool debug_speed = true;
 
 double d_distance;
 double d_angle;
-double k1; //linear adjustment coefficient
-double k2; //angular adjustment coefficient
+double k1 = 1.0; //linear adjustment coefficient
+double k2 = 1.0; //angular adjustment coefficient
 
-double k_stable; //depart/arrive strength
+double k_stable = 1.0; //depart/arrive strength
 
 double max_v = 5;
 double max_w = 2;
@@ -86,6 +92,7 @@ void startPoseCB(const snowmower_steering::CmdPose& cmd) {
 	start_pose.pose = cmd.pose;
 	start_pose.v_arrive = cmd.v_arrive;
 	start_pose.v_depart = cmd.v_depart;
+	start_flag = true;
 	new_route = true;
 }
 
@@ -96,6 +103,7 @@ void endPoseCB(const snowmower_steering::CmdPose& cmd) {
 	end_pose.pose = cmd.pose;
 	end_pose.v_arrive = cmd.v_arrive;
 	end_pose.v_depart = cmd.v_depart; 
+	end_flag = true;
 	new_route = true;
 }
 
@@ -103,10 +111,11 @@ void robotPoseCB(const geometry_msgs::Pose& message_pose) {
 	ROS_INFO("Recieved new robot pose");
 	robot_pose.position = message_pose.position;
 	robot_pose.orientation = message_pose.orientation;
-
+	robot_flag = true;
 }
 ///*
 void obstacleCB(const snowmower_steering::Obstacle& cmd) {
+	obstacle_flag = true;
 	if (cmd.type == "add") {
 		obstacles.push_back(cmd);
 	}
@@ -132,47 +141,61 @@ void obstacleCB(const snowmower_steering::Obstacle& cmd) {
 //*/
 void update() {
 	if (debug_mode) { ROS_INFO("updating"); }
-	if (dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w < .05)) {
-		//at goal point w/in 5 cm
-		ROS_INFO("near goal location...");
-		if (abs(robot_pose.orientation.w - end_pose.pose.orientation.w) < .05) {
-			//at goal orientation w/in 3 degrees
-			ROS_INFO("...near goal pose");
-			send_feedback = true;
-			feedback.data = "next";
-			d_angle = 0.0;
-			d_distance = 0.0;
+	if (start_flag && end_flag && robot_flag) {
+
+		if (dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w) < .05) {
+			//at goal point w/in 5 cm
+			std::stringstream ss;
+			ss << "\n(" << robot_pose.position.x << "," << robot_pose.position.y << "," << robot_pose.orientation.w << ")" 
+				<< " is near goal location... (" 
+				<< end_pose.pose.position.x << "," << end_pose.pose.position.y << "," << end_pose.pose.orientation.w << ")" 
+				<< " at distance " << dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w) << " m" ;
+			ROS_INFO("%s", ss.str().c_str());
+			if (abs(robot_pose.orientation.w - end_pose.pose.orientation.w) < .05) {
+				//at goal orientation w/in 3 degrees
+				ROS_INFO("...near goal pose");
+				send_feedback = true;
+				feedback.data = "next";
+				d_angle = 0.0;
+				d_distance = 0.0;
+			}
+			else {
+				ROS_INFO(".rotating to goal pose");
+				send_feedback = true;
+				feedback.data = "repeat";
+				d_angle = end_pose.pose.orientation.w - robot_pose.orientation.w;
+				d_distance = dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w);
+			}
 		}
-		else {
-			ROS_INFO(".rotating to goal pose");
-			send_feedback = true;
-			feedback.data = "repeat";
-			d_angle = end_pose.pose.orientation.w - robot_pose.orientation.w;
+		else {	
+			//main work function for the steering
+			if (debug_mode) { ROS_INFO("following potential function.."); }
+			generate_potential_map();
+			d_angle = evaluate_point(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w);
 			d_distance = dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w);
+
 		}
-	}
-	else {	
-	//main work function for the steering
-	if (debug_mode) { ROS_INFO("following potential function.."); }
-	generate_potential_map();
-	d_angle = evaluate_point(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w);
-	d_distance = dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w);
 
+		//converts work function output to message format
+		convert_to_twist();
 	}
-
-	//converts work function output to message format
-	convert_to_twist();
+	else {
+		ROS_INFO("Waiting on poses, etc.");
+	}
 }
 void generate_potential_map() {
+	if (debug_methods) { ROS_INFO("---- generate_potential_map"); }
 	update_obstacles();
 	update_waypoints();
 	
 }
 void update_obstacles() {
+	if (debug_methods) { ROS_INFO("---- update_obstacles"); }
 	//TODO 1
 	//need to add an obstacle message, callback, etc.
 }
 void update_waypoints() {
+	if (debug_methods) { ROS_INFO("---- update_waypoints"); }
 	//TODO 1
 	// this and update obstacles maybe unnecessary or shifted (maybe moved to callbacks)
 }
@@ -181,8 +204,14 @@ double evaluate_point(double x, double y, double theta) {
 	double arr = arrive_component(x,y,theta);
 	double mov = motive_component(x,y,theta);
 	double obs = obstacle_component(x,y,theta);
+	if (debug_methods) { 
+		ROS_INFO("---- evaluate_point");
+		std::stringstream ss;
+		ss << "\n      + dep: " << dep << " " << (dep/3.14*180.0) << "\n      + arr: " << arr << " " << (arr/3.14*180.0) << "\n      + mov: " << mov << " " << (mov/3.14*180.0) << "\n      + obs: " << obs << " " << (obs/3.14*180.0) << "" ;
+		ROS_INFO("%s", ss.str().c_str());
+	}
 	double dx = 0.0;
-	double dy = 0.0;	
+	double dy = 0.0;
 	//TODO **Note: soften obstacle edge
 	if (obs == -77.7) {
 		dx = 1*cos(dep) + 1*cos(arr) + 1*cos(mov);
@@ -211,8 +240,12 @@ double arrive_component(double x, double y, double theta) {
 } 
 double motive_component(double x, double y, double theta) {
 	//single radial sink
-	double dy = end_pose.pose.position.y - end_pose.pose.position.y;
-	double dx = end_pose.pose.position.x - end_pose.pose.position.x;
+	double dy = end_pose.pose.position.y - robot_pose.position.y;
+	double dx = end_pose.pose.position.x - robot_pose.position.x;
+	ROS_INFO("MOTIVE CALC");
+	std::stringstream ss;
+	ss << "\ndy: " << dy << " dx: " << dx << "";
+	ROS_INFO("%s", ss.str().c_str());
 	return atan2(dy,dx);
 }
 double obstacle_component(double x, double y, double theta) {
@@ -254,17 +287,42 @@ void convert_to_twist() {
 	control_output.angular.y = 0;
 
 	//commands
-	control_output.linear.x = std::max(-max_v, std::min(max_v,k1*d_distance));
+	control_output.linear.x = std::max(-max_v, std::min(max_v,k1*d_distance+end_pose.v_arrive));
 	control_output.angular.z = std::max(-max_w, std::min(max_w, k2*d_angle));
 	std::stringstream ss;
 	ss << "--> Twist Out: v: "<< control_output.linear.x <<" w: " << control_output.angular.z << " ";
 	ROS_INFO("updating to new commands %s", ss.str().c_str());
 }
 
+void debug_method_check() {
+	ROS_INFO("start verbose method check");
+	ROS_INFO("Helper methods: ");
+/*
+	double dist(double x1, double y1, double x2, double y2) { return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2)); }
+	double dist_from_line(double x, double y, double xt0, double yt0, double xt, double yt) {
+	double dist_to_goal(double x, double y, double theta);
+*/
+	std::stringstream ss;
+	ss << " -- dist(0,0,3,4) => " <<  dist(0,0,3,4) << " ? 5";
+	ROS_INFO("%s", ss.str().c_str());
+		ss.clear();
+		ss.str("");
+	ss << " -- dist_from_line(3,4,0,0,1,0) => " << dist_from_line(3,4,0,0,1,0) << " ? 4";
+	ROS_INFO("%s", ss.str().c_str());
+		ss.clear();
+		ss.str("");
+	ss << " -- dist_to_goal(4.0,4.0,0.0) => " << dist_to_goal(4.0, 4.0, 0.0) << " ? ?";
+	ROS_INFO("%s", ss.str().c_str());
+		ss.clear();
+		ss.str("");
+	ROS_INFO("end verbose method check");
+}
+
 int main(int argc, char** argv) {
 	ros::init(argc,argv,"baskin_steering");
 	ros::NodeHandle n;
 	ros::Rate timer(10);
+	if (debug_methods || debug_mode) { debug_method_check(); }
 	if (debug_speed) {timer = ros::Rate(1); }
 	ROS_INFO("ROS init for baskin_steering");
 
