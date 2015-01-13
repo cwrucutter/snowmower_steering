@@ -51,6 +51,12 @@ double dist_from_line(double x, double y, double xt0, double yt0, double xt, dou
 	double y1 = y-yt0;
 	return (x1*yt+y1*xt)/sqrt(xt*xt+yt*yt);
 }
+double dist_to_goal(double x, double y, double theta) {
+	return dist(x, y, end_pose.pose.position.x, end_pose.pose.position.y);
+}
+double dist_to_start(double x, double y, double theta) {
+	return dist(x, y, start_pose.pose.position.x, start_pose.pose.position.y);
+}
 // end helper functions
 
 	
@@ -79,9 +85,13 @@ void update();
 	double evaluate_point(double x, double y, double theta);
 		double depart_component(double x, double y, double theta); 
 		double arrive_component(double x, double y, double theta); 
-		double motive_component(double x, double y, double theta);
-		double obstacle_component(double x, double y, double theta);
-	double dist_to_goal(double x, double y, double theta);
+		double motive_component(double x, double y, double theta); //mov
+		double obstacle_component(double x, double y, double theta); //obs
+		//declare assistant functions to determine gains for dep/arr/mov/obs
+		double dep_gain(double x, double y, double theta);
+		double arr_gain(double x, double y, double theta);
+		double mov_gain(double x, double y, double theta);
+		double obs_gain(double x, double y, double theta);
 	void convert_to_twist();
 // end predeclared functions
 
@@ -199,6 +209,7 @@ void update_waypoints() {
 	//TODO 1
 	// this and update obstacles maybe unnecessary or shifted (maybe moved to callbacks)
 }
+
 double evaluate_point(double x, double y, double theta) {
 	double dep = depart_component(x,y,theta);
 	double arr = arrive_component(x,y,theta);
@@ -214,12 +225,12 @@ double evaluate_point(double x, double y, double theta) {
 	double dy = 0.0;
 	//TODO **Note: soften obstacle edge
 	if (obs == -77.7) {
-		dx = 1*cos(dep) + 1*cos(arr) + 1*cos(mov);
-		dy = 1*sin(dep) + 1*sin(arr) + 1*sin(mov);
+		dx = dep_gain(x,y,theta)*cos(dep) + arr_gain(x,y,theta)*cos(arr) + mov_gain(x,y,theta)*cos(mov);
+		dy = dep_gain(x,y,theta)*sin(dep) + arr_gain(x,y,theta)*sin(arr) + mov_gain(x,y,theta)*sin(mov);
 	}
 	else {
-		dx = 3*cos(obs) + 1*cos(dep) + 1*cos(arr) + 1*cos(mov);
-		dy = 3*sin(obs) + 1*sin(dep) + 1*sin(arr) + 1*sin(mov);
+		dx = obs_gain(x,y,theta)*cos(obs) + dep_gain(x,y,theta)*cos(dep) + arr_gain(x,y,theta)*cos(arr) + mov_gain(x,y,theta)*cos(mov);
+		dy = obs_gain(x,y,theta)*sin(obs) + dep_gain(x,y,theta)*sin(dep) + arr_gain(x,y,theta)*sin(arr) + mov_gain(x,y,theta)*sin(mov);
 	}
 	double dth = atan2(dy, dx); //desired theta angle
 	return dth - robot_pose.orientation.w;
@@ -230,6 +241,14 @@ double depart_component(double x, double y, double theta) {
 
 	return start_pose.pose.orientation.w - angle_offset;
 }
+double dep_gain(double x, double y, double theta) {
+	if(dist_to_start(x,y,theta) < 1.0) {
+		return 1.0;
+	}
+	else {
+		return 1.0 / pow(dist_to_start(x,y,theta),3);
+	}
+}
 double arrive_component(double x, double y, double theta) {
 	//dist from line sink
 	double angle_offset = atan(k_stable*dist_from_line(x,y, 
@@ -237,6 +256,14 @@ double arrive_component(double x, double y, double theta) {
 		cos(end_pose.pose.orientation.w), sin(end_pose.pose.orientation.w)));
 
 	return end_pose.pose.orientation.w + angle_offset;
+}
+double arr_gain(double x, double y, double theta) {
+	if(dist_to_goal(x,y,theta) < 1.0) {
+		return 1.0;
+	}
+	else {
+		return 1.0 / pow(dist_to_goal(x,y,theta),3);
+	}
 } 
 double motive_component(double x, double y, double theta) {
 	//single radial sink
@@ -247,6 +274,9 @@ double motive_component(double x, double y, double theta) {
 	ss << "\ndy: " << dy << " dx: " << dx << "";
 	ROS_INFO("%s", ss.str().c_str());
 	return atan2(dy,dx);
+}
+double mov_gain(double x, double y, double theta) {
+	return 1.0;
 }
 double obstacle_component(double x, double y, double theta) {
 	//multiple radial source
@@ -274,8 +304,8 @@ double obstacle_component(double x, double y, double theta) {
 		return atan2(dy, dx);
 	}
 }
-double dist_to_goal(double x, double y, double theta) {
-	return dist(x, y, end_pose.pose.position.x, end_pose.pose.position.y);
+double obs_gain(double x, double y, double theta) {
+	return 3.0;
 }
 void convert_to_twist() {
 	//takes controller input and makes it into a Twist
