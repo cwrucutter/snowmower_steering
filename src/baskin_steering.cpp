@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <math.h>
 #include <std_msgs/String.h>
+#include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Twist.h>
 #include <snowmower_steering/CmdPose.h>
@@ -23,7 +24,9 @@ bool obstacle_flag = false;
 
 bool debug_mode = false;
 bool debug_methods = true;
-bool debug_speed = true;
+bool debug_speed = false;
+
+bool simple_mode = false;
 
 double d_distance;
 double d_angle;
@@ -32,8 +35,8 @@ double k2 = 1.0; //angular adjustment coefficient
 
 double k_stable = 1.0; //depart/arrive strength
 
-double max_v = 5;
-double max_w = 2;
+double max_v = 1.0;
+double max_w = .75;
 
 geometry_msgs::Twist control_output; // linear.x = forward, angular.z = turn
 std_msgs::String feedback;
@@ -64,6 +67,7 @@ double dist_to_start(double x, double y, double theta) {
 void startPoseCB(const snowmower_steering::CmdPose& cmd);
 void endPoseCB(const snowmower_steering::CmdPose& cmd);
 void robotPoseCB(const geometry_msgs::Pose& message_pose);
+void robotSimPoseCB(const nav_msgs::Odometry& msg);
 void obstacleCB(const snowmower_steering::Obstacle& cmd);
 /* Calculation Structure
 update(): call this function
@@ -121,6 +125,18 @@ void robotPoseCB(const geometry_msgs::Pose& message_pose) {
 	ROS_INFO("Recieved new robot pose");
 	robot_pose.position = message_pose.position;
 	robot_pose.orientation = message_pose.orientation;
+	robot_flag = true;
+}
+void robotSimPoseCB(const nav_msgs::Odometry& msg) {
+	ROS_INFO("Recieved new robot-odom pose");
+/*
+geometry_msgs/PoseWithCovariance pose
+  geometry_msgs/Pose pose
+    geometry_msgs/Point position
+    geometry_msgs/Quaternion orientation
+*/
+	robot_pose.position = msg.pose.pose.position;
+	robot_pose.orientation = msg.pose.pose.orientation;
 	robot_flag = true;
 }
 ///*
@@ -242,7 +258,9 @@ double depart_component(double x, double y, double theta) {
 	return start_pose.pose.orientation.w - angle_offset;
 }
 double dep_gain(double x, double y, double theta) {
-	if(dist_to_start(x,y,theta) < 1.0) {
+
+	if (simple_mode) { return 0.0; }
+	else if(dist_to_start(x,y,theta) < 1.0) {
 		return 1.0;
 	}
 	else {
@@ -258,7 +276,8 @@ double arrive_component(double x, double y, double theta) {
 	return end_pose.pose.orientation.w + angle_offset;
 }
 double arr_gain(double x, double y, double theta) {
-	if(dist_to_goal(x,y,theta) < 1.0) {
+	if (simple_mode) { return 0.0; }
+	else if(dist_to_goal(x,y,theta) < 1.0) {
 		return 1.0;
 	}
 	else {
@@ -358,12 +377,13 @@ int main(int argc, char** argv) {
 
 	///*
 
-	ros::Publisher output_pub = n.advertise<geometry_msgs::Twist>("/steering/out",1);
+	ros::Publisher output_pub = n.advertise<geometry_msgs::Twist>("/robot0/cmd_vel",1);
 	ros::Publisher feedback_pub = n.advertise<std_msgs::String>("/steering/feedback",1);
 
 	ros::Subscriber sub_start = n.subscribe ("/steering/start_pose", 1, startPoseCB);
 	ros::Subscriber sub_end = n.subscribe ("/steering/end_pose", 1, endPoseCB);
 	ros::Subscriber sub_robot = n.subscribe ("/steering/robot_pose", 1, robotPoseCB);
+	ros::Subscriber sub_robot_odom = n.subscribe ("/robot0/odom", 1, robotSimPoseCB);
 	ros::Subscriber sub_obstacle = n.subscribe ("/steering/obstacle", 1, obstacleCB);
 
 	ros::spinOnce();
@@ -374,6 +394,18 @@ int main(int argc, char** argv) {
 	feedback_pub.publish(feedback);
 	feedback_pub.publish(feedback);
 	feedback_pub.publish(feedback);
+
+	control_output.linear.x = 0.0;
+	control_output.angular.z = 0.0;
+	std::stringstream ss;
+	ss << "--> Twist Out: v: "<< control_output.linear.x <<" w: " << control_output.angular.z << " ";
+	ROS_INFO("updating to new commands %s", ss.str().c_str());
+	output_pub.publish(control_output);
+
+	int input = -1;
+	std::cout << "begin operation?" << std::endl;
+	std::cin >> input;
+	if (input >=0) {
 	
 	while(ros::ok())
 	{
@@ -383,14 +415,30 @@ int main(int argc, char** argv) {
 		send_feedback = false;
 		update();
 		if (debug_mode) { ROS_INFO("Publishing control commands for robot"); }
-		output_pub.publish(control_output);
+		if (!ros::isShuttingDown()) { output_pub.publish(control_output); }
 		// request refresh from planner
 		if(send_feedback || true) { feedback_pub.publish(feedback); }
 
 		//subscribe
 		ros::spinOnce();
+		if (ros::isShuttingDown()) {
+			control_output.linear.x = 0.0;
+			control_output.angular.z = 0.0;
+			std::stringstream ss;
+			ss << "--> Twist Out: v: "<< control_output.linear.x <<" w: " << control_output.angular.z << " ";
+			ROS_INFO("updating to new commands %s", ss.str().c_str());
+			output_pub.publish(control_output);
+		}
 		timer.sleep();
 	}
 	//*/
+	//on node terminate, stop
+	control_output.linear.x = 0.0;
+	control_output.angular.z = 0.0;
+	std::stringstream ss;
+	ss << "--> Twist Out: v: "<< control_output.linear.x <<" w: " << control_output.angular.z << " ";
+	ROS_INFO("updating to new commands %s", ss.str().c_str());
+	output_pub.publish(control_output);
+	}
 	return 0;
 }

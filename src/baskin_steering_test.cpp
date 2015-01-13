@@ -13,6 +13,7 @@ ros::Publisher robot_pose_pub;
 ros::Publisher obstacle_pub;
 
 bool debug_mode = true;
+bool sim_mode = true;
 
 geometry_msgs::Pose robot_pose;
 
@@ -81,8 +82,8 @@ float64 v_depart
 	c.v_arrive = 0.0;
 	c.v_depart = 0.0;
 	geometry_msgs::Pose p;
-		p.position.x = 0.0;
-		p.position.y = 0.0;
+		p.position.x = 0.0+7.5;
+		p.position.y = 0.0+4.0;
 		p.position.z = 0.0;
 		p.orientation.x = 0.0;
 		p.orientation.y = 0.0;
@@ -92,19 +93,19 @@ float64 v_depart
 	waypoints.insert(waypoints.end(), c);
 	ROS_INFO("Setting up test..");
 
-	c.pose.position.x = 5.0;
+	c.pose.position.x = 5.0+7.5;
 	
 	waypoints.insert(waypoints.end(), c);
 	ROS_INFO("Setting up test...");
 
-	c.pose.position.y = 5.0;
+	c.pose.position.y = 5.0+4.0;
 	c.pose.orientation.w = 1.57;
 
 	waypoints.insert(waypoints.end(), c);
 	ROS_INFO("Setting up test....");
 	
-	c.pose.position.x = 0.0;
-	c.pose.position.y = 10.0;
+	c.pose.position.x = 0.0+7.5;
+	c.pose.position.y = 10.0+4.0;
 
 	waypoints.insert(waypoints.end(), c);
 	ROS_INFO("Test setup complete.");
@@ -119,12 +120,13 @@ int main(int argc, char** argv) {
 	setup_test();	
 	/*
 	//Steering talk/listen
-	ros::Publisher output_pub = n.advertise<geometry_msgs::Twist>("/steering/out",1);
+	ros::Publisher output_pub = n.advertise<geometry_msgs::Twist>("/robot0/cmd_vel",1);
 	ros::Publisher feedback_pub = n.advertise<std_msgs::String>("/steering/feedback",1);
 
 	ros::Subscriber sub_start = n.subscribe ("/steering/start_pose", 1, startPoseCB);
 	ros::Subscriber sub_end = n.subscribe ("/steering/end_pose", 1, endPoseCB);
 	ros::Subscriber sub_robot = n.subscribe ("/steering/robot_pose", 1, robotPoseCB);
+	ros::Subscriber sub_robot_odom = n.subscribe ("/robot0/odom", 1, robotSimPoseCB);
 	ros::Subscriber sub_obstacle = n.subscribe ("/steering/obstacle", 1, obstacleCB);
 	*/
 	//Test send-interaction points:
@@ -133,7 +135,7 @@ int main(int argc, char** argv) {
 	robot_pose_pub = n.advertise<geometry_msgs::Pose>("/steering/robot_pose",1);
 	obstacle_pub = n.advertise<snowmower_steering::Obstacle>("/steering/obstacle",1);
 	//Test recieve-interaction points:
-	ros::Subscriber output_sub = n.subscribe ("/steering/out", 1, outputCB);
+	ros::Subscriber output_sub = n.subscribe ("/robot0/cmd_vel", 1, outputCB);
 	ros::Subscriber feedback_sub = n.subscribe ("/steering/feedback", 1, feedbackCB);
 
 	ROS_INFO("Publishers and Subscribers set.");
@@ -149,28 +151,32 @@ int main(int argc, char** argv) {
 		double x;
 		double y;
 		double theta;
-		if (!ros::ok()) {break;}
-		ROS_INFO("Choosing robot position");
-		std::cout << "\nChoose robot_x\n" << std::endl;
-		std::cin >> x;
-		if (!ros::ok()) {break;}
-		std::cout << "\nChoose robot_y\n" << std::endl;
-		std::cin >> y;
-		if (!ros::ok()) {break;}
-		std::cout << "\nChoose robot_theta\n" << std::endl;
-		std::cin >> theta;
+		if (!sim_mode) {
+			if (!ros::ok()) {break;}
+			ROS_INFO("Choosing robot position");
+			std::cout << "\nChoose robot_x\n" << std::endl;
+			std::cin >> x;
+			if (!ros::ok()) {break;}
+			std::cout << "\nChoose robot_y\n" << std::endl;
+			std::cin >> y;
+			if (!ros::ok()) {break;}
+			std::cout << "\nChoose robot_theta\n" << std::endl;
+			std::cin >> theta;
 
-		robot_pose.position.x = x;
-		robot_pose.position.y = y;
-		robot_pose.position.z = 0.0;
-		robot_pose.orientation.x = 0.0;
-		robot_pose.orientation.y = 0.0;
-		robot_pose.orientation.z = 1.0;
-		robot_pose.orientation.w = theta;
+			robot_pose.position.x = x;
+			robot_pose.position.y = y;
+			robot_pose.position.z = 0.0;
+			robot_pose.orientation.x = 0.0;
+			robot_pose.orientation.y = 0.0;
+			robot_pose.orientation.z = 1.0;
+			robot_pose.orientation.w = theta;
 
-		ROS_INFO("Publishing new position");
-		robot_pose_pub.publish(robot_pose);
-
+			ROS_INFO("Publishing new position");
+			robot_pose_pub.publish(robot_pose);
+		}
+		else {
+		ROS_INFO("Running robot in simulator mode");
+		}
 		//subscribe
 		ros::spinOnce();
 		timer.sleep();
