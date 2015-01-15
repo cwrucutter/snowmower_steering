@@ -46,6 +46,7 @@ void feedbackCB(const std_msgs::String& cmd) {
 	}
 
 	try { 
+		ROS_INFO("new waypoints out");
 		start_pose_pub.publish(waypoints[waypoints_index % waypoints.size()]);
 		end_pose_pub.publish(waypoints[(waypoints_index+1) % waypoints.size()]);
 	}
@@ -55,14 +56,6 @@ void feedbackCB(const std_msgs::String& cmd) {
 void setup_test() {
 	ROS_INFO("Setting up test.");
 	snowmower_steering::CmdPose c;
-/*
-	Test Pattern:   
-	<x--+
-	 |  |
-	 |  +--<x
-	 |	    |
-	 x>-----x>
-*/
 /*
 [snowmower_steering/CmdPose]:
 geometry_msgs/Pose pose
@@ -82,8 +75,8 @@ float64 v_depart
 	c.v_arrive = 0.0;
 	c.v_depart = 0.0;
 	geometry_msgs::Pose p;
-		p.position.x = 0.0+7.5;
-		p.position.y = 0.0+4.0;
+		p.position.x = 7.5;
+		p.position.y = 4.0;
 		p.position.z = 0.0;
 		p.orientation.x = 0.0;
 		p.orientation.y = 0.0;
@@ -93,20 +86,45 @@ float64 v_depart
 	waypoints.insert(waypoints.end(), c);
 	ROS_INFO("Setting up test..");
 
-	c.pose.position.x = 5.0+7.5;
+	c.pose.position.x = 9.5;	
+	c.pose.position.y = 4.0;
+	c.pose.orientation.w = 0.0;
 	
 	waypoints.insert(waypoints.end(), c);
 	ROS_INFO("Setting up test...");
 
-	c.pose.position.y = 5.0+4.0;
-	c.pose.orientation.w = 1.57;
-
+	c.pose.position.x = 9.5;	
+	c.pose.position.y = 5.0;
+	c.pose.orientation.w = 3.14;
+	
 	waypoints.insert(waypoints.end(), c);
 	ROS_INFO("Setting up test....");
-	
-	c.pose.position.x = 0.0+7.5;
-	c.pose.position.y = 10.0+4.0;
 
+	c.pose.position.x = 7.5;	
+	c.pose.position.y = 7.0;
+	c.pose.orientation.w = 3.14;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..");
+
+	c.pose.position.x = 7.5;
+	c.pose.position.y = 8.0;
+	c.pose.orientation.w = 0.0;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..");
+
+	c.pose.position.x = 8.5;	
+	c.pose.position.y = 8.5;
+	c.pose.orientation.w = -0.785;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..");
+
+	c.pose.position.x = 8.5;	
+	c.pose.position.y = 6.5;
+	c.pose.orientation.w = -2.35;
+	
 	waypoints.insert(waypoints.end(), c);
 	ROS_INFO("Test setup complete.");
 
@@ -175,7 +193,7 @@ int main(int argc, char** argv) {
 			robot_pose_pub.publish(robot_pose);
 		}
 		else {
-		ROS_INFO("Running robot in simulator mode");
+			//ROS_INFO("Running robot in simulator mode");
 		}
 		//subscribe
 		ros::spinOnce();

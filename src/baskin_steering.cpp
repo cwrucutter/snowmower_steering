@@ -6,12 +6,13 @@
 #include <geometry_msgs/Twist.h>
 #include <snowmower_steering/CmdPose.h>
 #include <snowmower_steering/Obstacle.h>
-
+/* NOTE TO SELF: Check Quaternion implmentation */
 //steering shell
 
 snowmower_steering::CmdPose start_pose;
 snowmower_steering::CmdPose end_pose;
 geometry_msgs::Pose robot_pose;
+double robot_heading = 0.0;
 std::vector< snowmower_steering::Obstacle > obstacles;
 bool new_route = false;
 bool new_obstacles = false;
@@ -23,6 +24,7 @@ bool robot_flag = false;
 bool obstacle_flag = false;
 
 bool debug_mode = false;
+bool super_debug = false;
 bool debug_methods = true;
 bool debug_speed = false;
 
@@ -35,7 +37,7 @@ double k2 = 1.0; //angular adjustment coefficient
 
 double k_stable = 1.0; //depart/arrive strength
 
-double max_v = 1.0;
+double max_v = 0.25;
 double max_w = .75;
 
 geometry_msgs::Twist control_output; // linear.x = forward, angular.z = turn
@@ -70,7 +72,7 @@ void robotPoseCB(const geometry_msgs::Pose& message_pose);
 void robotSimPoseCB(const nav_msgs::Odometry& msg);
 void obstacleCB(const snowmower_steering::Obstacle& cmd);
 /* Calculation Structure
-update(): call this function
+void update(ros::Publisher& feedback_pub): call this function
  + generate_potential-map: update [component] functions
     + update_obstacles: update any obstacle locations
     + update_waypoints: revise start/end pose influence if needed
@@ -82,7 +84,7 @@ update(): call this function
  + calculate distance to / return speed
  + convert_to_twist: convert the output of the algorithm to Twist-speak
 */
-void update();
+void update(ros::Publisher& feedback_pub);
 	void generate_potential_map();
 		void update_obstacles();
 		void update_waypoints();
@@ -128,7 +130,11 @@ void robotPoseCB(const geometry_msgs::Pose& message_pose) {
 	robot_flag = true;
 }
 void robotSimPoseCB(const nav_msgs::Odometry& msg) {
-	ROS_INFO("Recieved new robot-odom pose");
+	std::stringstream ss;
+	ss << "Recieved new robot-odom pose [" << msg.pose.pose.position.x << "," << msg.pose.pose.position.y << "," << 
+		2.0*acos(msg.pose.pose.orientation.w) << "]";
+	robot_heading = 2.0*acos(msg.pose.pose.orientation.w);
+	ROS_INFO("%s", ss.str().c_str());
 /*
 geometry_msgs/PoseWithCovariance pose
   geometry_msgs/Pose pose
@@ -165,23 +171,37 @@ void obstacleCB(const snowmower_steering::Obstacle& cmd) {
 	}
 }
 //*/
-void update() {
+void update(ros::Publisher& feedback_pub) {
 	if (debug_mode) { ROS_INFO("updating"); }
 	if (start_flag && end_flag && robot_flag) {
-
-		if (dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w) < .05) {
+		feedback.data = "repeat";
+		if (dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_heading) < .05) {
 			//at goal point w/in 5 cm
 			std::stringstream ss;
-			ss << "\n(" << robot_pose.position.x << "," << robot_pose.position.y << "," << robot_pose.orientation.w << ")" 
+			ss << "\n(" << robot_pose.position.x << "," << robot_pose.position.y << "," << robot_heading << ")" 
 				<< " is near goal location... (" 
 				<< end_pose.pose.position.x << "," << end_pose.pose.position.y << "," << end_pose.pose.orientation.w << ")" 
-				<< " at distance " << dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w) << " m" ;
+				<< " at distance " << dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_heading) << " m" ;
 			ROS_INFO("%s", ss.str().c_str());
-			if (abs(robot_pose.orientation.w - end_pose.pose.orientation.w) < .05) {
+			if (abs(robot_heading - end_pose.pose.orientation.w) < .05) {
 				//at goal orientation w/in 3 degrees
 				ROS_INFO("...near goal pose");
 				send_feedback = true;
+				//if( feedback.data.compare("next")==0 ) { feedback.data = "repeat"; ROS_INFO("next string minimized");}
+				//else{ feedback.data = "next"; }
 				feedback.data = "next";
+				feedback_pub.publish(feedback);
+				ros::Rate joe(1);
+				joe.sleep();
+				ros::spinOnce();
+				joe.sleep();
+				ros::spinOnce();
+				joe.sleep();
+				ros::spinOnce();
+				joe.sleep();
+				ros::spinOnce();
+				ROS_INFO("end joe sleep");
+				feedback.data = "repeat";
 				d_angle = 0.0;
 				d_distance = 0.0;
 			}
@@ -189,16 +209,16 @@ void update() {
 				ROS_INFO(".rotating to goal pose");
 				send_feedback = true;
 				feedback.data = "repeat";
-				d_angle = end_pose.pose.orientation.w - robot_pose.orientation.w;
-				d_distance = dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w);
+				d_angle = end_pose.pose.orientation.w - robot_heading;
+				d_distance = dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_heading);
 			}
 		}
 		else {	
 			//main work function for the steering
 			if (debug_mode) { ROS_INFO("following potential function.."); }
 			generate_potential_map();
-			d_angle = evaluate_point(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w);
-			d_distance = dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_pose.orientation.w);
+			d_angle = evaluate_point(robot_pose.position.x, robot_pose.position.y, robot_heading);
+			d_distance = dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_heading);
 
 		}
 
@@ -241,15 +261,20 @@ double evaluate_point(double x, double y, double theta) {
 	double dy = 0.0;
 	//TODO **Note: soften obstacle edge
 	if (obs == -77.7) {
+		ROS_INFO("no obstacles mode");
 		dx = dep_gain(x,y,theta)*cos(dep) + arr_gain(x,y,theta)*cos(arr) + mov_gain(x,y,theta)*cos(mov);
 		dy = dep_gain(x,y,theta)*sin(dep) + arr_gain(x,y,theta)*sin(arr) + mov_gain(x,y,theta)*sin(mov);
 	}
 	else {
+		ROS_INFO("obstacles considered");
 		dx = obs_gain(x,y,theta)*cos(obs) + dep_gain(x,y,theta)*cos(dep) + arr_gain(x,y,theta)*cos(arr) + mov_gain(x,y,theta)*cos(mov);
 		dy = obs_gain(x,y,theta)*sin(obs) + dep_gain(x,y,theta)*sin(dep) + arr_gain(x,y,theta)*sin(arr) + mov_gain(x,y,theta)*sin(mov);
 	}
 	double dth = atan2(dy, dx); //desired theta angle
-	return dth - robot_pose.orientation.w;
+	std::stringstream ss;
+	ss << "eval point out --> " << "dx: " << dx << " dy:" << dy << " dth:" << dth << " robot_pose.or...w: " << robot_heading << "";
+	ROS_INFO("%s", ss.str().c_str());
+	return dth - robot_heading;
 }
 double depart_component(double x, double y, double theta) {
 	//dist from line source
@@ -339,7 +364,7 @@ void convert_to_twist() {
 	control_output.linear.x = std::max(-max_v, std::min(max_v,k1*d_distance+end_pose.v_arrive));
 	control_output.angular.z = std::max(-max_w, std::min(max_w, k2*d_angle));
 	std::stringstream ss;
-	ss << "--> Twist Out: v: "<< control_output.linear.x <<" w: " << control_output.angular.z << " ";
+	ss << "--> Twist Out: v: "<< control_output.linear.x <<" w: " << control_output.angular.z << "\n---> from k1*d_dist: " << k1*d_distance << " and k2*d_angle: " << k2*d_angle;
 	ROS_INFO("updating to new commands %s", ss.str().c_str());
 }
 
@@ -413,9 +438,28 @@ int main(int argc, char** argv) {
 		//publish
 		//do something with control_output
 		send_feedback = false;
-		update();
+		update(feedback_pub);
+		new_route = false;
 		if (debug_mode) { ROS_INFO("Publishing control commands for robot"); }
-		if (!ros::isShuttingDown()) { output_pub.publish(control_output); }
+
+		if (super_debug) { 
+			int input = 1;
+			std::cout << "publish message?" << std::endl;
+			std::cin >> input;
+			if(input > 0) {
+				output_pub.publish(control_output); 
+			}
+			else if (input == 0) {
+				control_output.linear.x = 0.0;
+				control_output.angular.z = 0.0;
+				output_pub.publish(control_output);
+			}
+			else { break; }
+		}
+		else { 
+			output_pub.publish(control_output); 
+		}
+
 		// request refresh from planner
 		if(send_feedback || true) { feedback_pub.publish(feedback); }
 
