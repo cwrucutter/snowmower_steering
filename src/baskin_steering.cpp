@@ -62,6 +62,9 @@ double dist_to_goal(double x, double y, double theta) {
 double dist_to_start(double x, double y, double theta) {
 	return dist(x, y, start_pose.pose.position.x, start_pose.pose.position.y);
 }
+double dist_to_obstacle(double x, double y, double scan_x, double scan_y, double r, double theta) {
+	return dist(x, y, scan_x+r*cos(theta), scan_y+r*sin(theta));
+}
 // end helper functions
 
 	
@@ -163,9 +166,10 @@ void obstacleCB(const snowmower_steering::Obstacle& cmd) {
 		for (int i = 0; i < obstacles.size(); i++) {
 			if (cmd.name == obstacles[i].name) { 
 				obstacles[i].type = cmd.type;
-				obstacles[i].radius = cmd.radius;
-				obstacles[i].x = cmd.x;
-				obstacles[i].y = cmd.y;
+				obstacles[i].size = cmd.size;
+				obstacles[i].r = cmd.r;
+				obstacles[i].theta = cmd.theta;
+				//obstacles[i].robot_pose = cmd.robot_pose;
 			}
 		}
 	}
@@ -274,13 +278,22 @@ double evaluate_point(double x, double y, double theta) {
 	std::stringstream ss;
 	ss << "eval point out --> " << "dx: " << dx << " dy:" << dy << " dth:" << dth << " robot_pose.or...w: " << robot_heading << "";
 	ROS_INFO("%s", ss.str().c_str());
-	return dth - robot_heading;
+	//need to do the [robocode] min_turn analysis
+	double turn = dth - robot_heading;
+	double pi = 3.14159;
+	while(turn >= 2.0*pi) { turn = turn - 2.0*pi; }
+	while(turn <= -2.0*pi) { turn = turn + 2.0*pi; }
+	//TODO check math
+	if(turn >= pi) { turn = -2.0*pi + turn; }
+	if(turn <= -pi) { turn = 2.0*pi + turn; }
+	return turn;
 }
 double depart_component(double x, double y, double theta) {
 	//dist from line source
 	double angle_offset = atan(k_stable*dist_from_line(x,y, start_pose.pose.position.x, start_pose.pose.position.y, cos(start_pose.pose.orientation.w), sin(start_pose.pose.orientation.w)));
 
-	return start_pose.pose.orientation.w - angle_offset;
+	//return start_pose.pose.orientation.w - angle_offset;
+	return 0.0;
 }
 double dep_gain(double x, double y, double theta) {
 
@@ -329,11 +342,12 @@ double obstacle_component(double x, double y, double theta) {
 	*/
 	double dx = 0.0;
 	double dy = 0.0;
-	
+//double dist_to_obstacle(double x, double y, double scan_x, double scan_y, double r, double theta)
 	for (int i = 0; i < obstacles.size(); i++) {
 		// if it is within the obstacle radius, "push" away
-		if (dist(x,y,obstacles[i].x,obstacles[i].y) < obstacles[i].radius) {
-			double pth = atan2(y-obstacles[i].y, x-obstacles[i].x); //push theta
+		//if (dist_to_obstacle(x,y,obstacles[i].robot_pose.x,obstacles[i].robot_pose.y, obstacles[i].r, obstacles[i].theta) < obstacles[i].size) {
+		if (false) { //test
+			double pth = atan2(y-obstacles[i].robot_pose.position.y, x-obstacles[i].robot_pose.position.x); //push theta
 			dx = dx + cos(pth);
 			dy = dy + sin(pth);
 		}
