@@ -25,20 +25,20 @@ bool obstacle_flag = false;
 
 bool debug_mode = false;
 bool super_debug = true;
-bool debug_methods = true;
+bool debug_methods = false;
 bool debug_speed = false;
 
 bool simple_mode = false;
 
 double d_distance;
 double d_angle;
-double k1 = 1.0; //linear adjustment coefficient
+double k1 = 0.5; //linear adjustment coefficient
 double k2 = 1.0; //angular adjustment coefficient
 
 double k_stable = 1.0; //depart/arrive strength
 
-double max_v = 0.1;
-double max_w = 1.5;
+double max_v = 0.5;
+double max_w = 1.0;
 
 geometry_msgs::Twist control_output; // linear.x = forward, angular.z = turn
 std_msgs::String feedback;
@@ -270,12 +270,12 @@ double evaluate_point(double x, double y, double theta) {
 	double dy = 0.0;
 	//TODO **Note: soften obstacle edge
 	if (obs == -77.7) {
-		ROS_INFO("no obstacles mode");
+		if (debug_methods) { ROS_INFO("no obstacles mode"); }
 		dx = dep_gain(x,y,theta)*cos(dep) + arr_gain(x,y,theta)*cos(arr) + mov_gain(x,y,theta)*cos(mov);
 		dy = dep_gain(x,y,theta)*sin(dep) + arr_gain(x,y,theta)*sin(arr) + mov_gain(x,y,theta)*sin(mov);
 	}
 	else {
-		ROS_INFO("obstacles considered");
+		if (debug_methods) { ROS_INFO("obstacles considered"); }
 		dx = obs_gain(x,y,theta)*cos(obs) + dep_gain(x,y,theta)*cos(dep) + arr_gain(x,y,theta)*cos(arr) + mov_gain(x,y,theta)*cos(mov);
 		dy = obs_gain(x,y,theta)*sin(obs) + dep_gain(x,y,theta)*sin(dep) + arr_gain(x,y,theta)*sin(arr) + mov_gain(x,y,theta)*sin(mov);
 	}
@@ -283,7 +283,7 @@ double evaluate_point(double x, double y, double theta) {
 	//need to do the [robocode] min_turn analysis
 	double turn = dth - robot_heading;
 	std::stringstream ss;
-	ss << "eval point out --> " << "dx: " << dx << " dy:" << dy << " dth:" << dth << " robot_pose.or...w: " << robot_heading << "\n turn-in: " << turn << "";
+	ss << "eval point out -->\n          " << "dx: " << dx << " dy:" << dy << " \n          dth:" << dth << " robot_pose.or...w: " << robot_heading << " turn-in: " << turn << "";
 	ROS_INFO("%s", ss.str().c_str());
 	double pi = 3.14159;
 	while(turn >= 2.0*pi) { turn = turn - 2.0*pi; }
@@ -332,10 +332,10 @@ double motive_component(double x, double y, double theta) {
 	//single radial sink
 	double dy = end_pose.pose.position.y - robot_pose.position.y;
 	double dx = end_pose.pose.position.x - robot_pose.position.x;
-	ROS_INFO("MOTIVE CALC");
+	if (debug_methods) { ROS_INFO("MOTIVE CALC"); }
 	std::stringstream ss;
 	ss << "\ndy: " << dy << " dx: " << dx << "";
-	ROS_INFO("%s", ss.str().c_str());
+	if (debug_methods) { ROS_INFO("%s", ss.str().c_str()); }
 	return atan2(dy,dx);
 }
 double mov_gain(double x, double y, double theta) {
@@ -383,7 +383,7 @@ void convert_to_twist() {
 	control_output.angular.z = std::max(-max_w, std::min(max_w, k2*d_angle));
 	std::stringstream ss;
 	ss << "--> Twist Out: v: "<< control_output.linear.x <<" w: " << control_output.angular.z << "\n---> from k1*d_dist: " << k1*d_distance << " and k2*d_angle: " << k2*d_angle;
-	ROS_INFO("updating to new commands %s", ss.str().c_str());
+	ROS_INFO("updating to new commands \n          %s", ss.str().c_str());
 }
 
 void debug_method_check() {
@@ -448,6 +448,7 @@ int main(int argc, char** argv) {
 	int input = -1;
 	std::cout << "begin operation?" << std::endl;
 	std::cin >> input;
+	std::cout << "\n\n\n\n" << std::endl;
 	if (input >=0) {
 	
 	while(ros::ok())
@@ -460,8 +461,9 @@ int main(int argc, char** argv) {
 		obstacles.clear();
 		new_route = false;
 		if (debug_mode) { ROS_INFO("Publishing control commands for robot"); }
-
+		ros::spinOnce();
 		if (super_debug) { 
+			ros::spinOnce();
 			int input = 1;
 			std::cout << "publish message?" << std::endl;
 			std::cin >> input;
@@ -475,8 +477,10 @@ int main(int argc, char** argv) {
 				output_pub.publish(control_output);
 			}
 			else { break; }
+			std::cout << "\n\n\n\n" << std::endl;
 		}
 		else { 
+			ros::spinOnce();
 			output_pub.publish(control_output); 
 		}
 

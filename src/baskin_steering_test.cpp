@@ -75,8 +75,8 @@ float64 v_depart
 	c.v_arrive = 0.0;
 	c.v_depart = 0.0;
 	geometry_msgs::Pose p;
-		p.position.x = 7.5;
-		p.position.y = 4.0;
+		p.position.x = 5.0;
+		p.position.y = 2.0;
 		p.position.z = 0.0;
 		p.orientation.x = 0.0;
 		p.orientation.y = 0.0;
@@ -85,48 +85,56 @@ float64 v_depart
 	c.pose = p;
 	waypoints.insert(waypoints.end(), c);
 ///*
-	ROS_INFO("Setting up test..");
+	ROS_INFO("Setting up test");
 
-	c.pose.position.x = 9.5;	
-	c.pose.position.y = 4.0;
+	c.pose.position.x = 7.0;	
+	c.pose.position.y = 2.0;
 	c.pose.orientation.w = 0.0;
 	
 	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test...");
+	ROS_INFO("Setting up test.");
 
-	c.pose.position.x = 9.5;	
+	c.pose.position.x = 7.0;	
+	c.pose.position.y = 4.0;
+	c.pose.orientation.w = 3.14;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..");
+
+	c.pose.position.x = 3.0;	
 	c.pose.position.y = 5.0;
 	c.pose.orientation.w = 3.14;
 	
 	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test....");
-
-	c.pose.position.x = 7.5;	
-	c.pose.position.y = 7.0;
-	c.pose.orientation.w = 3.14;
-	
-	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test..");
+	ROS_INFO("Setting up test...");
 
 	c.pose.position.x = 8.0;
-	c.pose.position.y = 8.0;
+	c.pose.position.y = 7.0;
 	c.pose.orientation.w = 0.0;
 	
 	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test..");
+	ROS_INFO("Setting up test....");
 
-	c.pose.position.x = 8.5;	
-	c.pose.position.y = 8.5;
-	c.pose.orientation.w = -0.785;
+	c.pose.position.x = 9.0;	
+	c.pose.position.y = 9.0;
+	c.pose.orientation.w = 1.58;
 	
 	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test..");
+	ROS_INFO("Setting up test.....");
 
-	c.pose.position.x = 8.5;	
-	c.pose.position.y = 6.5;
-	c.pose.orientation.w = -2.35;
+	c.pose.position.x = 6.0;	
+	c.pose.position.y = 11.0;
+	c.pose.orientation.w = 3.14;
 	
 	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test......");
+
+	c.pose.position.x = 3.0;	
+	c.pose.position.y = 6.0;
+	c.pose.orientation.w = -1.58;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test......");
 //*/
 /*
 	ROS_INFO("Setting up test..");
