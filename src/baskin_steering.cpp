@@ -169,7 +169,6 @@ void obstacleCB(const snowmower_steering::Obstacle& cmd) {
 				obstacles[i].size = cmd.size;
 				obstacles[i].r = cmd.r;
 				obstacles[i].theta = cmd.theta;
-				//obstacles[i].robot_pose = cmd.robot_pose;
 			}
 		}
 	}
@@ -339,18 +338,15 @@ double obstacle_component(double x, double y, double theta) {
 	//multiple radial source
 	/*
 		sums the vectors for nearby objects to establish the obstacle avoidance vector
+		TODO if given a direction to the object, return the effect based on distance in the opposite direction. local avoidance. bam.
+		TODO 1 get a effect function for distance to give each object influence. Also, assume that new obstacles are published every step to be avoided?
 	*/
 	double dx = 0.0;
 	double dy = 0.0;
-//double dist_to_obstacle(double x, double y, double scan_x, double scan_y, double r, double theta)
+
 	for (int i = 0; i < obstacles.size(); i++) {
-		// if it is within the obstacle radius, "push" away
-		//if (dist_to_obstacle(x,y,obstacles[i].robot_pose.x,obstacles[i].robot_pose.y, obstacles[i].r, obstacles[i].theta) < obstacles[i].size) {
-		if (false) { //test
-			double pth = atan2(y-obstacles[i].robot_pose.position.y, x-obstacles[i].robot_pose.position.x); //push theta
-			dx = dx + cos(pth);
-			dy = dy + sin(pth);
-		}
+		dx = dx + std::min(1.0,obstacles[i].size/pow(obstacles[i].r, 3.0))*cos(obstacles[i].theta);
+		dy = dy + std::min(1.0,obstacles[i].size/pow(obstacles[i].r, 3.0))*sin(obstacles[i].theta);
 	}
 	// error or no obstacle effect
 	if (dx == 0.0 && dy == 0.0) {
@@ -363,6 +359,7 @@ double obstacle_component(double x, double y, double theta) {
 	}
 }
 double obs_gain(double x, double y, double theta) {
+	if(simple_mode) return 0.0;
 	return 3.0;
 }
 void convert_to_twist() {
@@ -453,6 +450,7 @@ int main(int argc, char** argv) {
 		//do something with control_output
 		send_feedback = false;
 		update(feedback_pub);
+		obstacles.clear();
 		new_route = false;
 		if (debug_mode) { ROS_INFO("Publishing control commands for robot"); }
 
