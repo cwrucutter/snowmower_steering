@@ -84,6 +84,7 @@ float64 v_depart
 		p.orientation.w = 0.0;
 	c.pose = p;
 	waypoints.insert(waypoints.end(), c);
+///*
 	ROS_INFO("Setting up test..");
 
 	c.pose.position.x = 9.5;	
@@ -107,7 +108,7 @@ float64 v_depart
 	waypoints.insert(waypoints.end(), c);
 	ROS_INFO("Setting up test..");
 
-	c.pose.position.x = 7.5;
+	c.pose.position.x = 8.0;
 	c.pose.position.y = 8.0;
 	c.pose.orientation.w = 0.0;
 	
@@ -126,6 +127,15 @@ float64 v_depart
 	c.pose.orientation.w = -2.35;
 	
 	waypoints.insert(waypoints.end(), c);
+//*/
+/*
+	ROS_INFO("Setting up test..");
+
+	c.pose.position.x = 9.5;	
+	c.pose.position.y = 5.5;
+	c.pose.orientation.w = 0.0;
+	waypoints.insert(waypoints.end(), c);
+//*/
 	ROS_INFO("Test setup complete.");
 
 }

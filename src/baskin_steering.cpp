@@ -24,7 +24,7 @@ bool robot_flag = false;
 bool obstacle_flag = false;
 
 bool debug_mode = false;
-bool super_debug = false;
+bool super_debug = true;
 bool debug_methods = true;
 bool debug_speed = false;
 
@@ -37,8 +37,8 @@ double k2 = 1.0; //angular adjustment coefficient
 
 double k_stable = 1.0; //depart/arrive strength
 
-double max_v = 0.25;
-double max_w = .75;
+double max_v = 0.1;
+double max_w = 1.5;
 
 geometry_msgs::Twist control_output; // linear.x = forward, angular.z = turn
 std_msgs::String feedback;
@@ -137,6 +137,9 @@ void robotSimPoseCB(const nav_msgs::Odometry& msg) {
 	ss << "Recieved new robot-odom pose [" << msg.pose.pose.position.x << "," << msg.pose.pose.position.y << "," << 
 		2.0*acos(msg.pose.pose.orientation.w) << "]";
 	robot_heading = 2.0*acos(msg.pose.pose.orientation.w);
+	if (msg.pose.pose.orientation.x < 0.0 || msg.pose.pose.orientation.y < 0.0 || msg.pose.pose.orientation.z < 0.0) {
+		robot_heading = -robot_heading;
+	}
 	ROS_INFO("%s", ss.str().c_str());
 /*
 geometry_msgs/PoseWithCovariance pose
@@ -174,7 +177,7 @@ void obstacleCB(const snowmower_steering::Obstacle& cmd) {
 	}
 }
 //*/
-void update(ros::Publisher& feedback_pub) {
+void update(ros::Publisher& feedback_pub, ros::Publisher& output_pub) {
 	if (debug_mode) { ROS_INFO("updating"); }
 	if (start_flag && end_flag && robot_flag) {
 		feedback.data = "repeat";
@@ -194,6 +197,9 @@ void update(ros::Publisher& feedback_pub) {
 				//else{ feedback.data = "next"; }
 				feedback.data = "next";
 				feedback_pub.publish(feedback);
+				control_output.linear.x = 0.0;
+				control_output.angular.z = 0.0;
+				output_pub.publish(control_output);
 				ros::Rate joe(1);
 				joe.sleep();
 				ros::spinOnce();
@@ -257,7 +263,7 @@ double evaluate_point(double x, double y, double theta) {
 	if (debug_methods) { 
 		ROS_INFO("---- evaluate_point");
 		std::stringstream ss;
-		ss << "\n      + dep: " << dep << " " << (dep/3.14*180.0) << "\n      + arr: " << arr << " " << (arr/3.14*180.0) << "\n      + mov: " << mov << " " << (mov/3.14*180.0) << "\n      + obs: " << obs << " " << (obs/3.14*180.0) << "" ;
+		ss << "\n      + dep: " << dep << " " << (dep/3.14*180.0) << "\n      + arr: " << arr_gain(x,y,theta) << "*" << arr << " " << (arr/3.14*180.0) << "\n      + mov: "  << mov_gain(x,y,theta) << "*" << mov << " " << (mov/3.14*180.0) << "\n      + obs: " << obs_gain(x,y,theta) << "*" << obs << " " << (obs/3.14*180.0) << "" ;
 		ROS_INFO("%s", ss.str().c_str());
 	}
 	double dx = 0.0;
@@ -274,11 +280,11 @@ double evaluate_point(double x, double y, double theta) {
 		dy = obs_gain(x,y,theta)*sin(obs) + dep_gain(x,y,theta)*sin(dep) + arr_gain(x,y,theta)*sin(arr) + mov_gain(x,y,theta)*sin(mov);
 	}
 	double dth = atan2(dy, dx); //desired theta angle
-	std::stringstream ss;
-	ss << "eval point out --> " << "dx: " << dx << " dy:" << dy << " dth:" << dth << " robot_pose.or...w: " << robot_heading << "";
-	ROS_INFO("%s", ss.str().c_str());
 	//need to do the [robocode] min_turn analysis
 	double turn = dth - robot_heading;
+	std::stringstream ss;
+	ss << "eval point out --> " << "dx: " << dx << " dy:" << dy << " dth:" << dth << " robot_pose.or...w: " << robot_heading << "\n turn-in: " << turn << "";
+	ROS_INFO("%s", ss.str().c_str());
 	double pi = 3.14159;
 	while(turn >= 2.0*pi) { turn = turn - 2.0*pi; }
 	while(turn <= -2.0*pi) { turn = turn + 2.0*pi; }
@@ -306,7 +312,7 @@ double dep_gain(double x, double y, double theta) {
 }
 double arrive_component(double x, double y, double theta) {
 	//dist from line sink
-	double angle_offset = atan(k_stable*dist_from_line(x,y, 
+	double angle_offset = atan(-1.0*k_stable*dist_from_line(x,y, 
 		end_pose.pose.position.x, end_pose.pose.position.y, 
 		cos(end_pose.pose.orientation.w), sin(end_pose.pose.orientation.w)));
 
@@ -315,7 +321,8 @@ double arrive_component(double x, double y, double theta) {
 double arr_gain(double x, double y, double theta) {
 	if (simple_mode) { return 0.0; }
 	else if(dist_to_goal(x,y,theta) < 1.0) {
-		return 1.0;
+		//when close, decrease influence, focus on getting there and then rotating
+		return dist_to_goal(x,y,theta);
 	}
 	else {
 		return 1.0 / pow(dist_to_goal(x,y,theta),3);
@@ -449,7 +456,7 @@ int main(int argc, char** argv) {
 		//publish
 		//do something with control_output
 		send_feedback = false;
-		update(feedback_pub);
+		update(feedback_pub, output_pub);
 		obstacles.clear();
 		new_route = false;
 		if (debug_mode) { ROS_INFO("Publishing control commands for robot"); }
@@ -458,6 +465,7 @@ int main(int argc, char** argv) {
 			int input = 1;
 			std::cout << "publish message?" << std::endl;
 			std::cin >> input;
+			if(input > 10) { super_debug = false; }
 			if(input > 0) {
 				output_pub.publish(control_output); 
 			}
