@@ -260,7 +260,7 @@ double evaluate_point(double x, double y, double theta) {
 	double arr = arrive_component(x,y,theta);
 	double mov = motive_component(x,y,theta);
 	double obs = obstacle_component(x,y,theta);
-	if (debug_methods) { 
+	if (debug_methods || true) { 
 		ROS_INFO("---- evaluate_point");
 		std::stringstream ss;
 		ss << "\n      + dep: " << dep << " " << (dep/3.14*180.0) << "\n      + arr: " << arr_gain(x,y,theta) << "*" << arr << " " << (arr/3.14*180.0) << "\n      + mov: "  << mov_gain(x,y,theta) << "*" << mov << " " << (mov/3.14*180.0) << "\n      + obs: " << obs_gain(x,y,theta) << "*" << obs << " " << (obs/3.14*180.0) << "" ;
@@ -297,17 +297,23 @@ double depart_component(double x, double y, double theta) {
 	//dist from line source
 	double angle_offset = atan(k_stable*dist_from_line(x,y, start_pose.pose.position.x, start_pose.pose.position.y, cos(start_pose.pose.orientation.w), sin(start_pose.pose.orientation.w)));
 
-	//return start_pose.pose.orientation.w - angle_offset;
-	return 0.0;
+	return start_pose.pose.orientation.w - angle_offset;
+	//return 0.0;
 }
 double dep_gain(double x, double y, double theta) {
 
 	if (simple_mode) { return 0.0; }
-	else if(dist_to_start(x,y,theta) < 1.0) {
-		return 1.0;
-	}
 	else {
-		return 1.0 / pow(dist_to_start(x,y,theta),3);
+		double d_start = dist_to_start(x,y,theta);
+		double d_full = dist_to_goal(start_pose.pose.position.x, start_pose.pose.position.y, start_pose.pose.orientation.w);
+		double d_limit = 1.0;
+		if (d_full / 3.0 < d_limit) { d_limit =  d_full / 3.0; }
+		if(d_start < d_limit) {
+			return 1.0;
+		}
+		else {
+			return d_limit / pow(dist_to_start(x,y,theta),3);
+		}
 	}
 }
 double arrive_component(double x, double y, double theta) {
@@ -413,7 +419,7 @@ void debug_method_check() {
 int main(int argc, char** argv) {
 	ros::init(argc,argv,"baskin_steering");
 	ros::NodeHandle n;
-	ros::Rate timer(10);
+	ros::Rate timer(20);
 	if (debug_methods || debug_mode) { debug_method_check(); }
 	if (debug_speed) {timer = ros::Rate(1); }
 	ROS_INFO("ROS init for baskin_steering");

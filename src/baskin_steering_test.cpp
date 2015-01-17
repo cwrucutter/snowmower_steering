@@ -127,14 +127,35 @@ float64 v_depart
 	c.pose.orientation.w = 3.14;
 	
 	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test......");
+	ROS_INFO("Setting up test..... .");
+
+	c.pose.position.x = 4.0;	
+	c.pose.position.y = 11.0;
+	c.pose.orientation.w = 3.14;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..... ..");
+
+	c.pose.position.x = 3.0;	
+	c.pose.position.y = 9.0;
+	c.pose.orientation.w = -1.58;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..... ...");
 
 	c.pose.position.x = 3.0;	
 	c.pose.position.y = 6.0;
 	c.pose.orientation.w = -1.58;
 	
 	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test......");
+	ROS_INFO("Setting up test..... ....");
+
+	c.pose.position.x = 3.0;	
+	c.pose.position.y = 3.0;
+	c.pose.orientation.w = -1.58;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..... .....");
 //*/
 /*
 	ROS_INFO("Setting up test..");
@@ -152,7 +173,7 @@ int main(int argc, char** argv) {
 	ROS_INFO("ROS init for baskin_steering_test");
 	ros::init(argc,argv,"baskin_steering_test");
 	ros::NodeHandle n;
-	ros::Rate timer(10);
+	ros::Rate timer(20);
 	setup_test();	
 	/*
 	//Steering talk/listen
