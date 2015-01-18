@@ -53,7 +53,7 @@ void feedbackCB(const std_msgs::String& cmd) {
 	catch(int e) { ROS_INFO("int Feedback error"); }
 }
 
-void setup_test() {
+void setup_test(double n, double m) {
 	ROS_INFO("Setting up test.");
 	snowmower_steering::CmdPose c;
 /*
@@ -72,6 +72,166 @@ float64 v_arrive
 float64 v_depart
 
 */
+///* repeat plow loop
+	c.v_arrive = 0.0;
+	c.v_depart = 0.0;
+	geometry_msgs::Pose p;
+		p.position.x = 8.0;
+		p.position.y = 15.0;
+		p.position.z = 0.0;
+		p.orientation.x = 0.0;
+		p.orientation.y = 0.0;
+		p.orientation.z = 1.0;
+		p.orientation.w = -1.58;
+	c.pose = p;
+	waypoints.insert(waypoints.end(), c);
+
+	ROS_INFO("Setting up test");
+
+	c.pose.position.x = 8.0;	
+	c.pose.position.y = 14.0;
+	c.pose.orientation.w = -1.58;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test.");
+
+	c.pose.position.x = 7.0+n;	
+	c.pose.position.y = 14.0-(m*.5);
+	c.pose.orientation.w = 3.14;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..");
+
+	c.pose.position.x = 4.0-n;	
+	c.pose.position.y = 14.0-(m*.5);
+	c.pose.orientation.w = 3.14;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test...");
+
+	c.pose.position.x = 4.0-n;
+	c.pose.position.y = 14.0-(m*1.5);
+	c.pose.orientation.w = 0.0;
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test....");
+	double i = 0.0;
+	//generation loop
+	while(14.0 - (i*2.0+1.5)*m > 4.0) {
+		i = i + 1.0;
+		//%0
+		c.pose.position.x = 7.0+n;	
+		c.pose.position.y = 14.0-((2.0*i-.5)*m);
+		c.pose.orientation.w = 0.0;
+	
+		waypoints.insert(waypoints.end(), c);
+		//%1
+		c.pose.position.x = 7.0+n;	
+		c.pose.position.y = 14.0-((2.0*i+.5)*m);
+		c.pose.orientation.w = 3.14;
+	
+		waypoints.insert(waypoints.end(), c);
+		//%2
+		c.pose.position.x = 4.0-n;	
+		c.pose.position.y = 14.0-((2.0*i+.5)*m);
+		c.pose.orientation.w = 3.14;
+	
+		waypoints.insert(waypoints.end(), c);
+		//%3
+		c.pose.position.x = 4.0-n;	
+		c.pose.position.y = 14.0-((2.0*i+1.5)*m);
+		c.pose.orientation.w = 0.0;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up w/ loop");
+	}
+	//end loop
+	c.pose.position.x = 5.5;	
+	c.pose.position.y = 15.5;
+	c.pose.orientation.w = 1.58;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..... ....");
+//*/
+/* short plow loop
+	c.v_arrive = 0.0;
+	c.v_depart = 0.0;
+	geometry_msgs::Pose p;
+		p.position.x = 8.0;
+		p.position.y = 15.0;
+		p.position.z = 0.0;
+		p.orientation.x = 0.0;
+		p.orientation.y = 0.0;
+		p.orientation.z = 1.0;
+		p.orientation.w = -1.58;
+	c.pose = p;
+	waypoints.insert(waypoints.end(), c);
+
+	ROS_INFO("Setting up test");
+
+	c.pose.position.x = 8.0;	
+	c.pose.position.y = 14.0;
+	c.pose.orientation.w = -1.58;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test.");
+
+	c.pose.position.x = 7.0;	
+	c.pose.position.y = 13.5;
+	c.pose.orientation.w = 3.14;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..");
+
+	c.pose.position.x = 4.0;	
+	c.pose.position.y = 13.5;
+	c.pose.orientation.w = 3.14;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test...");
+
+	c.pose.position.x = 4.0;
+	c.pose.position.y = 12.5;
+	c.pose.orientation.w = 0.0;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test....");
+
+	c.pose.position.x = 7.0;	
+	c.pose.position.y = 12.5;
+	c.pose.orientation.w = 0.0;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test.....");
+
+	c.pose.position.x = 7.0;	
+	c.pose.position.y = 11.5;
+	c.pose.orientation.w = 3.14;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..... .");
+
+	c.pose.position.x = 4.0;	
+	c.pose.position.y = 11.5;
+	c.pose.orientation.w = 3.14;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..... ..");
+
+	c.pose.position.x = 4.0;	
+	c.pose.position.y = 10.5;
+	c.pose.orientation.w = 0.0;f
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..... ...");
+
+	c.pose.position.x = 5.5;	
+	c.pose.position.y = 15.5;
+	c.pose.orientation.w = 1.58;
+	
+	waypoints.insert(waypoints.end(), c);
+	ROS_INFO("Setting up test..... ....");
+//*/
+/*	loop de loop
 	c.v_arrive = 0.0;
 	c.v_depart = 0.0;
 	geometry_msgs::Pose p;
@@ -84,7 +244,7 @@ float64 v_depart
 		p.orientation.w = 0.0;
 	c.pose = p;
 	waypoints.insert(waypoints.end(), c);
-///*
+
 	ROS_INFO("Setting up test");
 
 	c.pose.position.x = 7.0;	
@@ -157,7 +317,7 @@ float64 v_depart
 	waypoints.insert(waypoints.end(), c);
 	ROS_INFO("Setting up test..... .....");
 //*/
-/*
+/* quick change
 	ROS_INFO("Setting up test..");
 
 	c.pose.position.x = 9.5;	
@@ -174,7 +334,7 @@ int main(int argc, char** argv) {
 	ros::init(argc,argv,"baskin_steering_test");
 	ros::NodeHandle n;
 	ros::Rate timer(20);
-	setup_test();	
+	setup_test(0.0, 1.0);	
 	/*
 	//Steering talk/listen
 	ros::Publisher output_pub = n.advertise<geometry_msgs::Twist>("/robot0/cmd_vel",1);

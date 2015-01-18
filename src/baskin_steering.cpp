@@ -35,7 +35,7 @@ double d_angle;
 double k1 = 0.5; //linear adjustment coefficient
 double k2 = 1.0; //angular adjustment coefficient
 
-double k_stable = 1.0; //depart/arrive strength
+double k_stable = 2.0; //depart/arrive strength
 
 double max_v = 0.5;
 double max_w = 1.0;
@@ -181,7 +181,7 @@ void update(ros::Publisher& feedback_pub, ros::Publisher& output_pub) {
 	if (debug_mode) { ROS_INFO("updating"); }
 	if (start_flag && end_flag && robot_flag) {
 		feedback.data = "repeat";
-		if (dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_heading) < .05) {
+		if (dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_heading) < 0.05) {
 			//at goal point w/in 5 cm
 			std::stringstream ss;
 			ss << "\n(" << robot_pose.position.x << "," << robot_pose.position.y << "," << robot_heading << ")" 
@@ -189,13 +189,25 @@ void update(ros::Publisher& feedback_pub, ros::Publisher& output_pub) {
 				<< end_pose.pose.position.x << "," << end_pose.pose.position.y << "," << end_pose.pose.orientation.w << ")" 
 				<< " at distance " << dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_heading) << " m" ;
 			ROS_INFO("%s", ss.str().c_str());
-			if (abs(robot_heading - end_pose.pose.orientation.w) < .05) {
+			double turn = end_pose.pose.orientation.w - robot_heading;
+			double pi = 3.14159;
+			while(turn >= 2.0*pi) { turn = turn - 2.0*pi; }
+			while(turn <= -2.0*pi) { turn = turn + 2.0*pi; }
+			//TODO check math
+			if(turn >= pi) { turn = -2.0*pi + turn; }
+			if(turn <= -pi) { turn = 2.0*pi + turn; }
+
+			if (std::abs(turn) < 0.03) {
 				//at goal orientation w/in 3 degrees
-				ROS_INFO("...near goal pose");
+				int turn_min = std::abs(turn) < 0.03;
+				std::stringstream s2;
+				s2 << "...near goal pose	std::abs( " << turn  <<" ), " << std::abs(turn) << " . iftest( " << turn_min << " )";
+				ROS_INFO("%s", s2.str().c_str());
 				send_feedback = true;
 				//if( feedback.data.compare("next")==0 ) { feedback.data = "repeat"; ROS_INFO("next string minimized");}
 				//else{ feedback.data = "next"; }
 				feedback.data = "next";
+				//super_debug = true;
 				feedback_pub.publish(feedback);
 				control_output.linear.x = 0.0;
 				control_output.angular.z = 0.0;
@@ -218,8 +230,15 @@ void update(ros::Publisher& feedback_pub, ros::Publisher& output_pub) {
 				ROS_INFO(".rotating to goal pose");
 				send_feedback = true;
 				feedback.data = "repeat";
-				d_angle = end_pose.pose.orientation.w - robot_heading;
-				d_distance = dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_heading);
+				double turn = end_pose.pose.orientation.w - robot_heading;
+				double pi = 3.14159;
+				while(turn >= 2.0*pi) { turn = turn - 2.0*pi; }
+				while(turn <= -2.0*pi) { turn = turn + 2.0*pi; }
+				//TODO check math
+				if(turn >= pi) { turn = -2.0*pi + turn; }
+				if(turn <= -pi) { turn = 2.0*pi + turn; }
+				d_angle = turn;
+				d_distance = 0.0;
 			}
 		}
 		else {	
@@ -263,7 +282,7 @@ double evaluate_point(double x, double y, double theta) {
 	if (debug_methods || true) { 
 		ROS_INFO("---- evaluate_point");
 		std::stringstream ss;
-		ss << "\n      + dep: " << dep << " " << (dep/3.14*180.0) << "\n      + arr: " << arr_gain(x,y,theta) << "*" << arr << " " << (arr/3.14*180.0) << "\n      + mov: "  << mov_gain(x,y,theta) << "*" << mov << " " << (mov/3.14*180.0) << "\n      + obs: " << obs_gain(x,y,theta) << "*" << obs << " " << (obs/3.14*180.0) << "" ;
+		ss << "\n      + dep: " << dep_gain(x,y,theta) << "*" << dep << " " << (dep/3.14*180.0) << "\n      + arr: " << arr_gain(x,y,theta) << "*" << arr << " " << (arr/3.14*180.0) << "\n      + mov: "  << mov_gain(x,y,theta) << "*" << mov << " " << (mov/3.14*180.0) << "\n      + obs: " << obs_gain(x,y,theta) << "*" << obs << " " << (obs/3.14*180.0) << "" ;
 		ROS_INFO("%s", ss.str().c_str());
 	}
 	double dx = 0.0;
@@ -309,10 +328,10 @@ double dep_gain(double x, double y, double theta) {
 		double d_limit = 1.0;
 		if (d_full / 3.0 < d_limit) { d_limit =  d_full / 3.0; }
 		if(d_start < d_limit) {
-			return 1.0;
+			return 0.5;
 		}
 		else {
-			return d_limit / pow(dist_to_start(x,y,theta),3);
+			return std::min(0.5, d_limit / pow(dist_to_start(x,y,theta),3));
 		}
 	}
 }
@@ -326,12 +345,12 @@ double arrive_component(double x, double y, double theta) {
 }
 double arr_gain(double x, double y, double theta) {
 	if (simple_mode) { return 0.0; }
-	else if(dist_to_goal(x,y,theta) < 1.0) {
+	else if(dist_to_goal(x,y,theta) < 0.5) {
 		//when close, decrease influence, focus on getting there and then rotating
 		return dist_to_goal(x,y,theta);
 	}
 	else {
-		return 1.0 / pow(dist_to_goal(x,y,theta),3);
+		return std::min(0.5, 0.5 / pow(dist_to_goal(x,y,theta),3));
 	}
 } 
 double motive_component(double x, double y, double theta) {
@@ -413,6 +432,8 @@ void debug_method_check() {
 	ROS_INFO("%s", ss.str().c_str());
 		ss.clear();
 		ss.str("");
+	ss << " -- abs( " << abs(.045) << " ) / std::abs( " << std::abs(.045) << " )";
+	ROS_INFO("%s", ss.str().c_str());
 	ROS_INFO("end verbose method check");
 }
 
@@ -420,7 +441,7 @@ int main(int argc, char** argv) {
 	ros::init(argc,argv,"baskin_steering");
 	ros::NodeHandle n;
 	ros::Rate timer(20);
-	if (debug_methods || debug_mode) { debug_method_check(); }
+	if (debug_methods || debug_mode || true) { debug_method_check(); }
 	if (debug_speed) {timer = ros::Rate(1); }
 	ROS_INFO("ROS init for baskin_steering");
 
