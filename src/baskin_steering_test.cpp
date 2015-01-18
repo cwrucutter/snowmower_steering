@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
 	ros::init(argc,argv,"baskin_steering_test");
 	ros::NodeHandle n;
 	ros::Rate timer(20);
-	setup_test(0.0, 1.0);	
+	setup_test(0.25, 0.85);	
 	/*
 	//Steering talk/listen
 	ros::Publisher output_pub = n.advertise<geometry_msgs::Twist>("/robot0/cmd_vel",1);

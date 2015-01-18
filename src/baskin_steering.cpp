@@ -4,6 +4,7 @@
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Twist.h>
+#include <visualization_msgs/Marker.h>
 #include <snowmower_steering/CmdPose.h>
 #include <snowmower_steering/Obstacle.h>
 /* NOTE TO SELF: Check Quaternion implmentation */
@@ -449,6 +450,7 @@ int main(int argc, char** argv) {
 
 	ros::Publisher output_pub = n.advertise<geometry_msgs::Twist>("/robot0/cmd_vel",1);
 	ros::Publisher feedback_pub = n.advertise<std_msgs::String>("/steering/feedback",1);
+	ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker",1);
 
 	ros::Subscriber sub_start = n.subscribe ("/steering/start_pose", 1, startPoseCB);
 	ros::Subscriber sub_end = n.subscribe ("/steering/end_pose", 1, endPoseCB);
@@ -477,7 +479,26 @@ int main(int argc, char** argv) {
 	std::cin >> input;
 	std::cout << "\n\n\n\n" << std::endl;
 	if (input >=0) {
-	
+
+	visualization_msgs::Marker marker;
+	marker.header.frame_id = "/map";
+	marker.header.stamp = ros::Time::now();
+	uint32_t shape = visualization_msgs::Marker::CUBE;
+	marker.ns = "basic_shapes";
+	marker.id = 0;
+	marker.type = shape;
+	marker.action = visualization_msgs::Marker::ADD;
+	marker.pose = robot_pose;
+	marker.scale.x = .1;
+	marker.scale.y = .1;
+	marker.scale.z = .1;
+	marker.lifetime = ros::Duration();
+	marker.color.r = 1.0f;
+	marker.color.g = 0.0f;
+	marker.color.b = 0.0f;
+	marker.color.a = 0.5;
+
+
 	while(ros::ok())
 	{
 		ros::spinOnce();
@@ -508,8 +529,12 @@ int main(int argc, char** argv) {
 		}
 		else { 
 			ros::spinOnce();
-			output_pub.publish(control_output); 
+			output_pub.publish(control_output);
 		}
+		//update marker
+		marker.header.stamp = ros::Time::now();
+		marker.pose = robot_pose;
+		marker_pub.publish(marker);
 
 		// request refresh from planner
 		if(send_feedback || true) { feedback_pub.publish(feedback); }
