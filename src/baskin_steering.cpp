@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <math.h>
 #include <std_msgs/String.h>
+#include <std_msgs/UInt8.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Twist.h>
@@ -15,6 +16,8 @@ snowmower_steering::CmdPose start_pose;
 snowmower_steering::CmdPose end_pose;
 geometry_msgs::Pose robot_pose;
 double robot_heading = 0.0;
+ros::Publisher plow_angle_pub;
+std_msgs::UInt8 jackie;
 std::vector< snowmower_steering::Obstacle > obstacles;
 
 //std::vector< visualization_msgs::Marker > markers;
@@ -42,7 +45,7 @@ double k2 = 1.0; //angular adjustment coefficient
 
 double k_stable = 2.0; //depart/arrive strength
 
-double max_v = 0.5;
+double max_v = 2.0;
 double max_w = 1.0;
 
 geometry_msgs::Twist control_output; // linear.x = forward, angular.z = turn
@@ -116,6 +119,15 @@ void startPoseCB(const snowmower_steering::CmdPose& cmd) {
 	start_pose.pose = cmd.pose;
 	start_pose.v_arrive = cmd.v_arrive;
 	start_pose.v_depart = cmd.v_depart;
+	start_pose.plow_angle = cmd.plow_angle;
+	try {
+		jackie.data = start_pose.plow_angle;
+		//ROS_INFO("|||| plow angle from start pose: %d ||||", jackie.data);
+		plow_angle_pub.publish(jackie);
+	}
+	catch(int e) {
+		ROS_WARN("int error");
+	}
 	start_flag = true;
 	new_route = true;
 }
@@ -205,7 +217,7 @@ void update(ros::Publisher& feedback_pub, ros::Publisher& output_pub) {
 	if (debug_mode) { ROS_INFO("updating"); }
 	if (start_flag && end_flag && robot_flag) {
 		feedback.data = "repeat";
-		if (dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_heading) < 0.05) {
+		if (dist_to_goal(robot_pose.position.x, robot_pose.position.y, robot_heading) < 0.10) {
 			//at goal point w/in 5 cm
 			std::stringstream ss;
 			ss << "\n(" << robot_pose.position.x << "," << robot_pose.position.y << "," << robot_heading << ")" 
@@ -474,7 +486,7 @@ int main(int argc, char** argv) {
 	ros::Publisher output_pub = n.advertise<geometry_msgs::Twist>("/robot0/cmd_vel",1);
 	ros::Publisher feedback_pub = n.advertise<std_msgs::String>("/steering/feedback",1);
 	ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker",1);
-
+	plow_angle_pub = n.advertise<std_msgs::UInt8>("/plow/angle",1);
 	ros::Subscriber sub_start = n.subscribe ("/steering/start_pose", 1, startPoseCB);
 	ros::Subscriber sub_end = n.subscribe ("/steering/end_pose", 1, endPoseCB);
 	ros::Subscriber sub_robot = n.subscribe ("/steering/robot_pose", 1, robotPoseCB);

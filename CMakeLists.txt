@@ -118,6 +118,7 @@ add_executable(simple_steering src/simple_steering.cpp)
 add_executable(PoseStamped_to_TF src/PoseStamped_to_TF.cpp)
 add_executable(baskin_steering src/baskin_steering.cpp)
 add_executable(baskin_steering_test src/baskin_steering_test.cpp)
+add_executable(baskin_planner src/baskin_planner.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -131,6 +132,7 @@ target_link_libraries(simple_steering ${catkin_LIBRARIES})
 target_link_libraries(PoseStamped_to_TF ${catkin_LIBRARIES})
 target_link_libraries(baskin_steering ${catkin_LIBRARIES})
 target_link_libraries(baskin_steering_test ${catkin_LIBRARIES})
+target_link_libraries(baskin_planner ${catkin_LIBRARIES})
 
 #############
 ## Install ##
