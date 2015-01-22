@@ -5,6 +5,7 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Twist.h>
 #include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <snowmower_steering/CmdPose.h>
 #include <snowmower_steering/Obstacle.h>
 /* NOTE TO SELF: Check Quaternion implmentation */
@@ -15,6 +16,9 @@ snowmower_steering::CmdPose end_pose;
 geometry_msgs::Pose robot_pose;
 double robot_heading = 0.0;
 std::vector< snowmower_steering::Obstacle > obstacles;
+
+//std::vector< visualization_msgs::Marker > markers;
+
 bool new_route = false;
 bool new_obstacles = false;
 bool send_feedback = true;
@@ -135,7 +139,7 @@ void robotPoseCB(const geometry_msgs::Pose& message_pose) {
 }
 void robotSimPoseCB(const nav_msgs::Odometry& msg) {
 	std::stringstream ss;
-	ss << "Recieved new robot-odom pose [" << msg.pose.pose.position.x << "," << msg.pose.pose.position.y << "," << 
+	ss << "Recieved new robot-odom pose [" << msg.pose.pose.position.x << "," << msg.pose.pose.position.y << ", +-" << 
 		2.0*acos(msg.pose.pose.orientation.w) << "]";
 	robot_heading = 2.0*acos(msg.pose.pose.orientation.w);
 	if (msg.pose.pose.orientation.x < 0.0 || msg.pose.pose.orientation.y < 0.0 || msg.pose.pose.orientation.z < 0.0) {
@@ -150,6 +154,25 @@ geometry_msgs/PoseWithCovariance pose
 */
 	robot_pose.position = msg.pose.pose.position;
 	robot_pose.orientation = msg.pose.pose.orientation;
+	robot_flag = true;
+}
+void robotRealPoseCB(const geometry_msgs::PoseWithCovariance& msg) {
+	std::stringstream ss;
+	ss << "Recieved new robot-estim pose [" << msg.pose.position.x << "," << msg.pose.position.y << ", +-" << 
+		2.0*acos(msg.pose.orientation.w) << "]";
+	robot_heading = 2.0*acos(msg.pose.orientation.w);
+	if (msg.pose.orientation.x < 0.0 || msg.pose.orientation.y < 0.0 || msg.pose.orientation.z < 0.0) {
+		robot_heading = -robot_heading;
+	}
+	ROS_INFO("%s",ss.str().c_str());
+/*
+[geometry_msgs/PoseWithCovariance]:
+geometry_msgs/Pose pose
+  geometry_msgs/Point position
+  geometry_msgs/Quaternion orientation
+*/
+	robot_pose.position = msg.pose.position;
+	robot_pose.orientation = msg.pose.orientation;
 	robot_flag = true;
 }
 ///*
@@ -280,7 +303,7 @@ double evaluate_point(double x, double y, double theta) {
 	double arr = arrive_component(x,y,theta);
 	double mov = motive_component(x,y,theta);
 	double obs = obstacle_component(x,y,theta);
-	if (debug_methods || true) { 
+	if (debug_methods || false) { 
 		ROS_INFO("---- evaluate_point");
 		std::stringstream ss;
 		ss << "\n      + dep: " << dep_gain(x,y,theta) << "*" << dep << " " << (dep/3.14*180.0) << "\n      + arr: " << arr_gain(x,y,theta) << "*" << arr << " " << (arr/3.14*180.0) << "\n      + mov: "  << mov_gain(x,y,theta) << "*" << mov << " " << (mov/3.14*180.0) << "\n      + obs: " << obs_gain(x,y,theta) << "*" << obs << " " << (obs/3.14*180.0) << "" ;
@@ -456,6 +479,7 @@ int main(int argc, char** argv) {
 	ros::Subscriber sub_end = n.subscribe ("/steering/end_pose", 1, endPoseCB);
 	ros::Subscriber sub_robot = n.subscribe ("/steering/robot_pose", 1, robotPoseCB);
 	ros::Subscriber sub_robot_odom = n.subscribe ("/robot0/odom", 1, robotSimPoseCB);
+	ros::Subscriber sub_robot_est = n.subscribe ("/pose_est" , 1, robotRealPoseCB);
 	ros::Subscriber sub_obstacle = n.subscribe ("/steering/obstacle", 1, obstacleCB);
 
 	ros::spinOnce();
@@ -480,25 +504,26 @@ int main(int argc, char** argv) {
 	std::cout << "\n\n\n\n" << std::endl;
 	if (input >=0) {
 
+	//visualization_msgs::MarkerArray marker_array;
 	visualization_msgs::Marker marker;
 	marker.header.frame_id = "/map";
 	marker.header.stamp = ros::Time::now();
-	uint32_t shape = visualization_msgs::Marker::CUBE;
+	uint32_t shape = visualization_msgs::Marker::SPHERE;
 	marker.ns = "basic_shapes";
 	marker.id = 0;
 	marker.type = shape;
 	marker.action = visualization_msgs::Marker::ADD;
 	marker.pose = robot_pose;
-	marker.scale.x = .1;
-	marker.scale.y = .1;
-	marker.scale.z = .1;
+	marker.scale.x = 0.5;
+	marker.scale.y = 0.5;
+	marker.scale.z = 0.5;
 	marker.lifetime = ros::Duration();
 	marker.color.r = 1.0f;
 	marker.color.g = 0.0f;
 	marker.color.b = 0.0f;
-	marker.color.a = 0.5;
+	marker.color.a = 1.0f;
 
-
+	int counter = 0 ;
 	while(ros::ok())
 	{
 		ros::spinOnce();
@@ -531,10 +556,16 @@ int main(int argc, char** argv) {
 			ros::spinOnce();
 			output_pub.publish(control_output);
 		}
-		//update marker
-		marker.header.stamp = ros::Time::now();
-		marker.pose = robot_pose;
-		marker_pub.publish(marker);
+		if (counter % 100 == 0) {
+			//update marker
+			marker.header.stamp = ros::Time::now();
+			marker.pose = robot_pose;
+			ROS_INFO("marker published");
+//			marker_array.markers.pushback(marker);
+//			marker_pub.publish(marker_array);
+			marker_pub.publish(marker);
+		}
+		counter = counter + 1;
 
 		// request refresh from planner
 		if(send_feedback || true) { feedback_pub.publish(feedback); }
