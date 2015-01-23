@@ -8,7 +8,8 @@
 #include <snowmower_steering/CmdPose.h>
 #include <snowmower_steering/Obstacle.h>
 /* args:
-	full_run: full pass on the field
+	full_run_plow: full pass on the field with moving plow
+	full_run_noplow: full pass on the field with no plow
 	square: forward 1m, spin 90, forward, etc.
 	forwardspin: forward 1 meter, spin 180, forward 1 meter, spin 180
  */
@@ -69,7 +70,7 @@ void plowCB(const std_msgs::UInt8& cmd) {
 	ROS_INFO("--> plow angle: %d", cmd.data);
 }
 
-void setup_test(const char* arg_name, double n, double m) {
+void setup_test(const char* arg_name,double field_type, double n, double m) {
 	ROS_INFO("Setting up test.");
 	snowmower_steering::CmdPose c;
 /*
@@ -88,6 +89,11 @@ float64 v_arrive
 float64 v_depart
 
 */
+	//TODO set to zero for actual robot
+	double map_shift_x = 2.0;
+	double map_shift_y = 2.0;
+	
+	
 	c.v_arrive = 0.0;
 	c.v_depart = 0.0;
 	geometry_msgs::Pose p;
@@ -96,22 +102,39 @@ float64 v_depart
 	p.orientation.y = 0.0;
 	p.orientation.z = 1.0;
 	c.sleep_time = 3;
+	c.pose = p;
+	
+	double field_x_min;
+	double field_x_max;
+	double field_y_min;
+	double field_y_max;
+	if(field_type < 1.10) { //single I
+		field_x_min = 1.5;
+		field_x_max = 2.5;
+		field_y_min = 3.0;
+		field_y_max = 13.0;
+	}
+	else { //triple I
+		field_x_min = 2.0;
+		field_x_max = 5.0;
+		field_y_min = 3.0;
+		field_y_max = 13.0;
+	}
 
-	if(strcmp(arg_name, "full_run") ==0) {
+	if(strcmp(arg_name, "full_run_plow") ==0) {
 		///* repeat plow loop
-		c.pose.position.x = 5.5;	
-		c.pose.position.y = 15.5;
-		c.pose.orientation.w = 1.58;
+		c.pose.position.x = field_x_max+0.5+map_shift_x;	
+		c.pose.position.y = 2.0+map_shift_y;
+		c.pose.orientation.w = -1.58;
 		c.plow_angle = plow_left;
 		c.sleep_time = plow_sleep_time;
 
 		waypoints.insert(waypoints.end(), c);
 		ROS_INFO("Setting up test..... ....");
 
-		p.position.x = 8.0;
-		p.position.y = 15.0;
-		p.orientation.w = -1.58;
-		c.pose = p;
+		p.position.x = 1.0+map_shift_x;
+		p.position.y = 2.0+map_shift_y;
+		p.orientation.w = 1.58;
 		c.plow_angle = plow_center;
 		c.sleep_time = plow_sleep_time;
 		ROS_INFO("c.plow angle %d" , c.plow_angle);
@@ -119,36 +142,36 @@ float64 v_depart
 
 		ROS_INFO("Setting up test");
 
-		c.pose.position.x = 8.0;	
-		c.pose.position.y = 14.0;
-		c.pose.orientation.w = -1.58;
+		c.pose.position.x = 2.0+map_shift_x;	
+		c.pose.position.y = 2.0+map_shift_y;
+		c.pose.orientation.w = 1.58;
 		c.plow_angle = plow_left;
 		c.sleep_time = plow_sleep_time;
 	
 		waypoints.insert(waypoints.end(), c);
 		ROS_INFO("Setting up test.");
 
-		c.pose.position.x = 7.0+n;	
-		c.pose.position.y = 14.0-(m*.5);
-		c.pose.orientation.w = 3.14;
+		c.pose.position.x = field_x_min-n+map_shift_x;	
+		c.pose.position.y = field_y_min+(m*.5)+map_shift_y;
+		c.pose.orientation.w = 0.0;
 		c.plow_angle = plow_left;
 		c.sleep_time = default_sleep_time;
 	
 		waypoints.insert(waypoints.end(), c);
 		ROS_INFO("Setting up test..");
 
-		c.pose.position.x = 4.0-n;	
-		c.pose.position.y = 14.0-(m*.5);
-		c.pose.orientation.w = 3.14;
+		c.pose.position.x = field_x_max+n+map_shift_x;	
+		c.pose.position.y = field_y_min+(m*.5)+map_shift_y;
+		c.pose.orientation.w = 0.0;
 		c.plow_angle = plow_right;
 		c.sleep_time = plow_sleep_time;
 	
 		waypoints.insert(waypoints.end(), c);
 		ROS_INFO("Setting up test...");
 
-		c.pose.position.x = 4.0-n;
-		c.pose.position.y = 14.0-(m*1.5);
-		c.pose.orientation.w = 0.0;
+		c.pose.position.x = field_x_max+n+map_shift_x;
+		c.pose.position.y = field_y_min+(m*1.5)+map_shift_x;
+		c.pose.orientation.w = 3.14;
 		c.plow_angle = plow_right;
 		c.sleep_time = default_sleep_time;
 
@@ -156,36 +179,36 @@ float64 v_depart
 		ROS_INFO("Setting up test....");
 		double i = 0.0;
 		//generation loop
-		while(14.0 - (i*2.0+1.5)*m > 4.0) {
+		while(field_y_min + (i*2.0+1.5)*m < field_y_max) {
 			i = i + 1.0;
 			//%0
-			c.pose.position.x = 7.0+n;	
-			c.pose.position.y = 14.0-((2.0*i-.5)*m);
-			c.pose.orientation.w = 0.0;
+			c.pose.position.x = field_x_min-n+map_shift_x;	
+			c.pose.position.y = field_y_min+((2.0*i-.5)*m)+map_shift_y;
+			c.pose.orientation.w = 3.14;
 			c.plow_angle = plow_left;
 			c.sleep_time = plow_sleep_time;
 
 			waypoints.insert(waypoints.end(), c);
 			//%1
-			c.pose.position.x = 7.0+n;	
-			c.pose.position.y = 14.0-((2.0*i+.5)*m);
-			c.pose.orientation.w = 3.14;
+			c.pose.position.x = field_x_min+n+map_shift_x;
+			c.pose.position.y = field_y_min+((2.0*i+.5)*m)+map_shift_y;
+			c.pose.orientation.w = 0.0;
 			c.plow_angle = plow_left;
 			c.sleep_time = default_sleep_time;	
 
 			waypoints.insert(waypoints.end(), c);
 			//%2
-			c.pose.position.x = 4.0-n;	
-			c.pose.position.y = 14.0-((2.0*i+.5)*m);
-			c.pose.orientation.w = 3.14;
+			c.pose.position.x = field_x_max+n+map_shift_x;
+			c.pose.position.y = field_y_min+((2.0*i+.5)*m)+map_shift_y;
+			c.pose.orientation.w = 0.0;
 			c.plow_angle = plow_right;
 			c.sleep_time = plow_sleep_time;
 
 			waypoints.insert(waypoints.end(), c);
 			//%3
-			c.pose.position.x = 4.0-n;	
-			c.pose.position.y = 14.0-((2.0*i+1.5)*m);
-			c.pose.orientation.w = 0.0;
+			c.pose.position.x = field_x_max+n+map_shift_x;	
+			c.pose.position.y = field_y_min+((2.0*i+1.5)*m)+map_shift_y;
+			c.pose.orientation.w = 3.14;
 			c.plow_angle = plow_right;
 			c.sleep_time = default_sleep_time;
 
@@ -193,6 +216,125 @@ float64 v_depart
 			ROS_INFO("Setting up w/ loop");
 		}
 		//end loop
+		c.pose.position.x = field_x_max+n+map_shift_x;	
+		c.pose.position.y = field_y_min+((2.0*i+1.5)*m)+map_shift_y;
+		c.pose.orientation.w = -1.58;
+		c.plow_angle = plow_right;
+		c.sleep_time = default_sleep_time;
+
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up after loop");
+
+		//*/
+	}
+	else if (strcmp(arg_name, "full_run_noplow")) {
+		///* repeat plow loop
+		c.pose.position.x = field_x_max+0.5+map_shift_x;	
+		c.pose.position.y = 2.0+map_shift_y;
+		c.pose.orientation.w = -1.58;
+		c.plow_angle = plow_left;
+		c.sleep_time = plow_sleep_time;
+
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test..... ....");
+
+		p.position.x = 1.0+map_shift_x;
+		p.position.y = 2.0+map_shift_y;
+		p.orientation.w = 1.58;
+		c.plow_angle = plow_center;
+		c.sleep_time = plow_sleep_time;
+		ROS_INFO("c.plow angle %d" , c.plow_angle);
+		waypoints.insert(waypoints.end(), c);
+
+		c.pose.position.x = field_x_min-n+map_shift_x;	
+		c.pose.position.y = field_y_min+(m*0.0)+map_shift_y;
+		c.pose.orientation.w = 0.0;
+		c.plow_angle = plow_left;
+		c.sleep_time = default_sleep_time;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test..");
+
+		c.pose.position.x = field_x_max+n+map_shift_x;	
+		c.pose.position.y = field_y_min+(m*0.0)+map_shift_y;
+		c.pose.orientation.w = 0.0;
+		c.plow_angle = plow_right;
+		c.sleep_time = plow_sleep_time;
+		waypoints.insert(waypoints.end(), c);
+		
+		c.pose.orientation.w = 1.58;
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test...");
+
+		c.pose.position.x = field_x_max+n+map_shift_x;
+		c.pose.position.y = field_y_min+(m*1.0)+map_shift_y;
+		c.pose.orientation.w = 1.58;
+		c.plow_angle = plow_right;
+		c.sleep_time = default_sleep_time;
+		waypoints.insert(waypoints.end(), c);
+		
+		c.pose.orientation.w = 3.14;
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test....");
+		double i = 0.0;
+		//generation loop
+		while(field_y_min + (i*2.0+1.0)*m < field_y_max) {
+			i = i + 1.0;
+			//%0
+			c.pose.position.x = field_x_min-n+map_shift_x;	
+			c.pose.position.y = field_y_min+((2.0*i-1.0)*m)+map_shift_y;
+			c.pose.orientation.w = 3.14;
+			c.plow_angle = plow_left;
+			c.sleep_time = plow_sleep_time;
+			waypoints.insert(waypoints.end(), c);
+			
+			c.pose.orientation.w = 1.58;
+			waypoints.insert(waypoints.end(), c);
+
+			//%1
+			c.pose.position.x = field_x_min+n+map_shift_x;	
+			c.pose.position.y = field_y_min+((2.0*i+0.0)*m)+map_shift_y;
+			c.pose.orientation.w = 1.58;
+			c.plow_angle = plow_left;
+			c.sleep_time = default_sleep_time;	
+			waypoints.insert(waypoints.end(), c);
+			
+			c.pose.orientation.w = 0.0;
+			waypoints.insert(waypoints.end(), c);
+			
+			//%2
+			c.pose.position.x = field_x_max+n+map_shift_x;
+			c.pose.position.y = field_y_min+((2.0*i+0.0)*m)+map_shift_y;
+			c.pose.orientation.w = 0.0;
+			c.plow_angle = plow_right;
+			c.sleep_time = plow_sleep_time;
+			waypoints.insert(waypoints.end(), c);
+			
+			c.pose.orientation.w = 1.58;
+			waypoints.insert(waypoints.end(), c);
+			
+			//%3
+			c.pose.position.x = field_x_max+n+map_shift_x;
+			c.pose.position.y = field_y_min+((2.0*i+1.0)*m)+map_shift_y;
+			c.pose.orientation.w = 1.58;
+			c.plow_angle = plow_right;
+			c.sleep_time = default_sleep_time;
+			waypoints.insert(waypoints.end(), c);
+			
+			c.pose.orientation.w = 3.14;
+			waypoints.insert(waypoints.end(), c);
+			
+			ROS_INFO("Setting up w/ loop");
+		}
+		//end loop
+		c.pose.position.x = field_x_max+n+map_shift_x;
+		c.pose.position.y = field_y_min+((2.0*i+1.5)*m)+map_shift_y;
+		c.pose.orientation.w = -1.58;
+		c.plow_angle = plow_right;
+		c.sleep_time = default_sleep_time;
+
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up after loop");
 
 		//*/
 	}
@@ -341,17 +483,17 @@ int main(int argc, char** argv) {
 	}
 	ros::NodeHandle n;
 	ros::Rate timer(20);
-	if (argc > 3) {
-		setup_test(*(argv+1), atof(*(argv+2)), atof(*(argv+3)));
+	if (argc > 4) {
+		setup_test(*(argv+1), atof(*(argv+2)), atof(*(argv+3)), atof(*(argv+4)));
 	}
 	else if (argc > 2) {
-		setup_test(*(argv+1), atof(*(argv+2)), 0.90);
+		setup_test(*(argv+1), atof(*(argv+2)), 0.25, 0.90);
 	}
 	else if (argc > 1) {
-		setup_test(*(argv+1), 0.25, 0.90);
+		setup_test(*(argv+1), 3.0, 0.25, 0.90);
 	}
 	else {
-		setup_test("abc", 0.25, 0.90);
+		setup_test("abc", 3.0, 0.25, 0.90);
 	}
 	
 	/*

@@ -1,3 +1,4 @@
+/* William Baskin */
 #include <ros/ros.h>
 #include <iostream>
 #include <math.h>
@@ -8,7 +9,7 @@
 #include <snowmower_steering/Obstacle.h>
 
 ros::Publisher start_pose_pub;
-ros::Publisher end_pose_pub;
+ros::Publisher end_pose_pub;	
 ros::Publisher robot_pose_pub;
 ros::Publisher obstacle_pub;
 
@@ -330,8 +331,8 @@ float64 v_depart
 }
 
 int main(int argc, char** argv) {
-	ROS_INFO("ROS init for baskin_steering_test");
-	ros::init(argc,argv,"baskin_steering_test");
+	ROS_INFO("ROS init for test_fixture_waypoints");
+	ros::init(argc,argv,"test_fixture_waypoints");
 	ros::NodeHandle n;
 	ros::Rate timer(20);
 	setup_test(0.25, 0.85);	

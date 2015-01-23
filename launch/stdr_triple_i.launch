@@ -2,7 +2,7 @@
 	
 	<include file="$(find stdr_robot)/launch/robot_manager.launch"/>
 	
-	<node type="stdr_server_node" pkg="stdr_server" name="stdr_server" output="screen" args="$(find snowmower_sim)/maps/triple_i_map.yaml"/>
+	<node type="stdr_server_node" pkg="stdr_server" name="stdr_server" output="screen" args="$(find snowmower_steering)/maps/triple_i_map.yaml"/>
 
 	<node pkg="tf" type="static_transform_publisher" name="world2map" args="0 0 0 0 0 0  world map 100" />
 	
@@ -11,9 +11,11 @@
         
         <node pkg="rviz" type="rviz" name = "rviz" output="screen" args="-d $(find snowmower_steering)/launch/triple_i_rviz_config.rviz"/>
 
-	<node pkg="stdr_robot" type="robot_handler" name="$(anon robot_spawn)" args="add $(find snowmower_sim)/resources/robots/snowmower.yaml 8.1 14.9 -1.57079632679"/>
-
-	<node pkg="snowmower_steering" name="baskin_steering" type="baskin_steering" args="false" />
-	<node pkg="snowmower_steering" name="baskin_planner" type="baskin_planner" args="full_run 0.25 0.90" />
+	<node pkg="stdr_robot" type="robot_handler" name="$(anon robot_spawn)" args="add $(find snowmower_sim)/resources/robots/snowmower.yaml 2.9 3.9 1.57079632679"/>
+<!-- baskin_steering false(super_debug) true(ignore_obstacles) -->
+	<node pkg="snowmower_steering" name="baskin_steering"
+ type="baskin_steering" args="false true" />
+<!-- baskin_planner full_run_pow(run type) 3.0(field_type) 0.25(n width spacing) 0.90 (m plow run spacing) -->
+	<node pkg="snowmower_steering" name="baskin_planner" type="baskin_planner" args="full_run_plow 3.0 0.25 0.90" />
 
 </launch>

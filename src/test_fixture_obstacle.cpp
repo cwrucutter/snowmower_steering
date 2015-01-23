@@ -1,3 +1,5 @@
+/* William Baskin */
+
 #include <ros/ros.h>
 #include <math.h>
 #include <snowmower_steering/Obstacle.h>
@@ -16,6 +18,19 @@ double obs_y;
 snowmower_steering::Obstacle msg;
 geometry_msgs::Pose robot_pose;
 double robot_heading;
+/*
+	Helper methods
+	#helper
+ */
+double dist(double x1, double y1, double x2, double y2) { 
+	return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2)); 
+}
+
+
+/*
+	Obstacle interaction methods
+	#obstacle
+ */
 
 void synthetic_obstacle(double x, double y) {
 	obs_x = x;
@@ -26,6 +41,18 @@ void synthetic_obstacle(double x, double y) {
 	msg.r = 777.777;
 	msg.theta = 0.0;
 }
+void update_obstacle() {
+	double dx = obs_x - robot_pose.position.x;
+	double dy = obs_y - robot_pose.position.y;
+	double dth = atan2(obs_y, obs_x);
+	msg.theta = dth - robot_heading;
+	msg.r = dist(robot_pose.position.x, robot_pose.position.y, obs_x, obs_y);
+}
+
+/*
+	ROBOT POSITION Callbacks
+	#pose #robotPose
+ */
 void robotPoseCB(const geometry_msgs::Pose& msg) {
 	ROS_INFO("Recieved new robot pose");
 	robot_pose.position = msg.position;
@@ -56,7 +83,8 @@ void robotRealPoseCB(const geometry_msgs::PoseWithCovariance& msg) {
 
 
 /*
-	MAIN
+	MAIN 
+	#main
  */
 
 int main(int argc, char** argv) {
@@ -77,7 +105,10 @@ int main(int argc, char** argv) {
 	ros::Subscriber sub_robot_odom = n.subscribe ("/robot0/odom", 1, robotSimPoseCB);
 	ros::Subscriber sub_robot_est = n.subscribe ("/pose_est" , 1, robotRealPoseCB);
 	
+	obstacle_pub.publish(msg);
+	
 	while(ros::ok()) {
+		update_obstacle();
 		ros::spinOnce();
 	}
 }

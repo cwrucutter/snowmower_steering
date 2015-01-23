@@ -1,3 +1,4 @@
+/* William Baskin */
 #include <ros/ros.h>
 #include <math.h>
 #include <std_msgs/String.h>
@@ -37,6 +38,7 @@ bool debug_methods = false;
 bool debug_speed = false;
 
 bool simple_mode = false;
+bool ignore_obstacles = false;
 
 double d_distance;
 double d_angle;
@@ -190,7 +192,9 @@ geometry_msgs/Pose pose
 }
 ///*
 void obstacleCB(const snowmower_steering::Obstacle& cmd) {
-	obstacle_flag = true;
+	//obstacle_flag = true;
+	if(!ignore_obstacles) { obstacles.push_back(cmd); }
+	/*
 	if (cmd.type == "add") {
 		obstacles.push_back(cmd);
 	}
@@ -212,6 +216,7 @@ void obstacleCB(const snowmower_steering::Obstacle& cmd) {
 			}
 		}
 	}
+	*/
 }
 //*/
 void update(ros::Publisher& feedback_pub, ros::Publisher& output_pub) {
@@ -420,7 +425,7 @@ double obstacle_component(double x, double y, double theta) {
 		dy = dy + std::min(1.0,obstacles[i].size/pow(obstacles[i].r, 3.0))*sin(obstacles[i].theta);
 	}
 	// error or no obstacle effect
-	if (dx == 0.0 && dy == 0.0) {
+	if (std::abs(dx) <= 0.03 && std::abs(dy) <= 0.03) {
 		if (debug_mode) { ROS_INFO("No obstacles."); }
 		return -77.7;
 	}
@@ -428,9 +433,10 @@ double obstacle_component(double x, double y, double theta) {
 		if (debug_mode) { ROS_INFO("Obstacles nearby"); }
 		return atan2(dy, dx);
 	}
+	obstacles.clear();
 }
 double obs_gain(double x, double y, double theta) {
-	if(simple_mode) return 0.0;
+	if(simple_mode || ignore_obstacles) return 0.0;
 	return 3.0;
 }
 void convert_to_twist() {
@@ -487,6 +493,12 @@ int main(int argc, char** argv) {
 	}
 	else {
 		super_debug = false;
+	}
+	if(argc > 2 && strcmp(*(argv+2), "true")*strcmp(*(argv+2), "1") == 0) {
+		ignore_obstacles = true;
+	}
+	else {
+		ignore_obstacles = false;
 	}
 	ros::NodeHandle n;
 	ros::Rate timer(20);
