@@ -7,7 +7,11 @@
 #include <geometry_msgs/Twist.h>
 #include <snowmower_steering/CmdPose.h>
 #include <snowmower_steering/Obstacle.h>
-
+/* args:
+	full_run: full pass on the field
+	square: forward 1m, spin 90, forward, etc.
+	forwardspin: forward 1 meter, spin 180, forward 1 meter, spin 180
+ */
 ros::Publisher start_pose_pub;
 ros::Publisher end_pose_pub;
 ros::Publisher robot_pose_pub;
@@ -63,7 +67,7 @@ void plowCB(const std_msgs::UInt8& cmd) {
 	ROS_INFO("--> plow angle: %d", cmd.data);
 }
 
-void setup_test(double n, double m) {
+void setup_test(const char* arg_name, double n, double m) {
 	ROS_INFO("Setting up test.");
 	snowmower_steering::CmdPose c;
 /*
@@ -82,98 +86,235 @@ float64 v_arrive
 float64 v_depart
 
 */
-///* repeat plow loop
 	c.v_arrive = 0.0;
 	c.v_depart = 0.0;
 	geometry_msgs::Pose p;
-		p.position.x = 8.0;
-		p.position.y = 15.0;
-		p.position.z = 0.0;
-		p.orientation.x = 0.0;
-		p.orientation.y = 0.0;
-		p.orientation.z = 1.0;
-		p.orientation.w = -1.58;
-	c.pose = p;
-	c.plow_angle = plow_center;
-	ROS_INFO("c.plow angle %d" , c.plow_angle);
-	waypoints.insert(waypoints.end(), c);
+	p.position.z = 0.0;
+	p.orientation.x = 0.0;
+	p.orientation.y = 0.0;
+	p.orientation.z = 1.0;
 
-	ROS_INFO("Setting up test");
+	if(strcmp(arg_name, "full_run") ==0) {
+		///* repeat plow loop
+		c.pose.position.x = 5.5;	
+		c.pose.position.y = 15.5;
+		c.pose.orientation.w = 1.58;
+		c.plow_angle = plow_left;
 
-	c.pose.position.x = 8.0;	
-	c.pose.position.y = 14.0;
-	c.pose.orientation.w = -1.58;
-	c.plow_angle = plow_left;
-	
-	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test.");
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test..... ....");
 
-	c.pose.position.x = 7.0+n;	
-	c.pose.position.y = 14.0-(m*.5);
-	c.pose.orientation.w = 3.14;
-	c.plow_angle = plow_left;
-	
-	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test..");
+			p.position.x = 8.0;
+			p.position.y = 15.0;
+			p.orientation.w = -1.58;
+		c.pose = p;
+		c.plow_angle = plow_center;
+		ROS_INFO("c.plow angle %d" , c.plow_angle);
+		waypoints.insert(waypoints.end(), c);
 
-	c.pose.position.x = 4.0-n;	
-	c.pose.position.y = 14.0-(m*.5);
-	c.pose.orientation.w = 3.14;
-	c.plow_angle = plow_right;
-	
-	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test...");
+		ROS_INFO("Setting up test");
 
-	c.pose.position.x = 4.0-n;
-	c.pose.position.y = 14.0-(m*1.5);
-	c.pose.orientation.w = 0.0;
-	c.plow_angle = plow_right;
-
-	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test....");
-	double i = 0.0;
-	//generation loop
-	while(14.0 - (i*2.0+1.5)*m > 4.0) {
-		i = i + 1.0;
-		//%0
-		c.pose.position.x = 7.0+n;	
-		c.pose.position.y = 14.0-((2.0*i-.5)*m);
-		c.pose.orientation.w = 0.0;
+		c.pose.position.x = 8.0;	
+		c.pose.position.y = 14.0;
+		c.pose.orientation.w = -1.58;
 		c.plow_angle = plow_left;
 	
 		waypoints.insert(waypoints.end(), c);
-		//%1
+		ROS_INFO("Setting up test.");
+
 		c.pose.position.x = 7.0+n;	
-		c.pose.position.y = 14.0-((2.0*i+.5)*m);
+		c.pose.position.y = 14.0-(m*.5);
 		c.pose.orientation.w = 3.14;
 		c.plow_angle = plow_left;
 	
 		waypoints.insert(waypoints.end(), c);
-		//%2
+		ROS_INFO("Setting up test..");
+
 		c.pose.position.x = 4.0-n;	
-		c.pose.position.y = 14.0-((2.0*i+.5)*m);
+		c.pose.position.y = 14.0-(m*.5);
 		c.pose.orientation.w = 3.14;
 		c.plow_angle = plow_right;
-
+	
 		waypoints.insert(waypoints.end(), c);
-		//%3
-		c.pose.position.x = 4.0-n;	
-		c.pose.position.y = 14.0-((2.0*i+1.5)*m);
+		ROS_INFO("Setting up test...");
+
+		c.pose.position.x = 4.0-n;
+		c.pose.position.y = 14.0-(m*1.5);
 		c.pose.orientation.w = 0.0;
 		c.plow_angle = plow_right;
 
 		waypoints.insert(waypoints.end(), c);
-		ROS_INFO("Setting up w/ loop");
+		ROS_INFO("Setting up test....");
+		double i = 0.0;
+		//generation loop
+		while(14.0 - (i*2.0+1.5)*m > 4.0) {
+			i = i + 1.0;
+			//%0
+			c.pose.position.x = 7.0+n;	
+			c.pose.position.y = 14.0-((2.0*i-.5)*m);
+			c.pose.orientation.w = 0.0;
+			c.plow_angle = plow_left;
+	
+			waypoints.insert(waypoints.end(), c);
+			//%1
+			c.pose.position.x = 7.0+n;	
+			c.pose.position.y = 14.0-((2.0*i+.5)*m);
+			c.pose.orientation.w = 3.14;
+			c.plow_angle = plow_left;
+	
+			waypoints.insert(waypoints.end(), c);
+			//%2
+			c.pose.position.x = 4.0-n;	
+			c.pose.position.y = 14.0-((2.0*i+.5)*m);
+			c.pose.orientation.w = 3.14;
+			c.plow_angle = plow_right;
+
+			waypoints.insert(waypoints.end(), c);
+			//%3
+			c.pose.position.x = 4.0-n;	
+			c.pose.position.y = 14.0-((2.0*i+1.5)*m);
+			c.pose.orientation.w = 0.0;
+			c.plow_angle = plow_right;
+
+			waypoints.insert(waypoints.end(), c);
+			ROS_INFO("Setting up w/ loop");
+		}
+		//end loop
+
+		//*/
 	}
-	//end loop
-	c.pose.position.x = 5.5;	
-	c.pose.position.y = 15.5;
-	c.pose.orientation.w = 1.58;
-	c.plow_angle = plow_left;
+	else if (strcmp(arg_name, "square") ==0) {
+		c.v_arrive = 0.0;
+		c.v_depart = 0.0;
+		geometry_msgs::Pose p;
+			p.position.x = 3.0;
+			p.position.y = 3.0;
+			p.position.z = 0.0;
+			p.orientation.x = 0.0;
+			p.orientation.y = 0.0;
+			p.orientation.z = 1.0;
+			p.orientation.w = 0.0;
+		c.pose = p;
+		c.plow_angle = plow_center;
+		waypoints.insert(waypoints.end(), c);
 
-	waypoints.insert(waypoints.end(), c);
-	ROS_INFO("Setting up test..... ....");
-//*/
+		ROS_INFO("Setting up test");
+
+		c.pose.position.x = 4.0;	
+		c.pose.position.y = 3.0;
+		c.pose.orientation.w = 0.0;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test.");
+
+		c.pose.position.x = 4.0;	
+		c.pose.position.y = 3.0;
+		c.pose.orientation.w = 1.58;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test..");
+
+		c.pose.position.x = 4.0;	
+		c.pose.position.y = 4.0;
+		c.pose.orientation.w = 1.58;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test...");
+
+		c.pose.position.x = 4.0;	
+		c.pose.position.y = 4.0;
+		c.pose.orientation.w = 3.14;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test....");
+
+		c.pose.position.x = 3.0;	
+		c.pose.position.y = 4.0;
+		c.pose.orientation.w = 3.14;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test.....");
+
+		c.pose.position.x = 3.0;	
+		c.pose.position.y = 4.0;
+		c.pose.orientation.w = -1.58;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test..... .");
+		c.pose.position.x = 3.0;	
+		c.pose.position.y = 3.0;
+		c.pose.orientation.w = -1.58;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test..... ..");
+
+		c.pose.position.x = 3.0;	
+		c.pose.position.y = 3.0;
+		c.pose.orientation.w = 0.0;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test..... ...");
+	}
+	else if (strcmp(arg_name, "forwardspin") ==0) {
+		c.v_arrive = 0.0;
+		c.v_depart = 0.0;
+		geometry_msgs::Pose p;
+			p.position.x = 0.0;
+			p.position.y = 0.0;
+			p.position.z = 0.0;
+			p.orientation.x = 0.0;
+			p.orientation.y = 0.0;
+			p.orientation.z = 1.0;
+			p.orientation.w = 0.0;
+		c.pose = p;
+		c.plow_angle = plow_center;
+		waypoints.insert(waypoints.end(), c);
+
+		ROS_INFO("Setting up test");
+
+		c.pose.position.x = 1.0;	
+		c.pose.position.y = 0.0;
+		c.pose.orientation.w = 0.0;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test.");
+
+		c.pose.position.x = 1.0;	
+		c.pose.position.y = 0.0;
+		c.pose.orientation.w = 3.14;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test..");
+
+		c.pose.position.x = 0.0;	
+		c.pose.position.y = 0.0;
+		c.pose.orientation.w = 3.14;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test...");
+
+		c.pose.position.x = 0.0;	
+		c.pose.position.y = 0.0;
+		c.pose.orientation.w = 0.0;
+		c.plow_angle = plow_center;
+	
+		waypoints.insert(waypoints.end(), c);
+		ROS_INFO("Setting up test....");
+	}
+	else {
+		ROS_INFO("Invalid argument");
+	}
 	ROS_INFO("Test setup complete.");
 
 }
@@ -181,9 +322,25 @@ float64 v_depart
 int main(int argc, char** argv) {
 	ROS_INFO("ROS init for baskin_steering_test");
 	ros::init(argc,argv,"baskin_planner");
+	ROS_INFO("argc --> %d", argc);
+	for (int i = 0; i < argc; i++) {
+		ROS_INFO("argv --> %s", *(argv+i));
+	}
 	ros::NodeHandle n;
 	ros::Rate timer(20);
-	setup_test(0.25, 0.90);	
+	if (argc > 3) {
+		setup_test(*(argv+1), atof(*(argv+2)), atof(*(argv+3)));
+	}
+	else if (argc > 2) {
+		setup_test(*(argv+1), atof(*(argv+2)), 0.90);
+	}
+	else if (argc > 1) {
+		setup_test(*(argv+1), 0.25, 0.90);
+	}
+	else {
+		setup_test("abc", 0.25, 0.90);
+	}
+	
 	/*
 	//Steering talk/listen
 	ros::Publisher output_pub = n.advertise<geometry_msgs::Twist>("/robot0/cmd_vel",1);

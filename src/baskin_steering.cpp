@@ -475,6 +475,16 @@ void debug_method_check() {
 
 int main(int argc, char** argv) {
 	ros::init(argc,argv,"baskin_steering");
+	ROS_INFO("argc --> %d", argc);
+	for(int i = 0; i < argc; i++) {
+		ROS_INFO("argv --> %s", *(argv+i));
+	}
+	if(argc > 1 && strcmp(*(argv+1), "true")*strcmp(*(argv+1), "1") == 0) {
+		super_debug = true;
+	}
+	else {
+		super_debug = false;
+	}
 	ros::NodeHandle n;
 	ros::Rate timer(20);
 	if (debug_methods || debug_mode || true) { debug_method_check(); }
@@ -510,10 +520,10 @@ int main(int argc, char** argv) {
 	ROS_INFO("updating to new commands %s", ss.str().c_str());
 	output_pub.publish(control_output);
 
-	int input = -1;
-	std::cout << "begin operation?" << std::endl;
+	int input = 1;
+	/*std::cout << "begin operation?" << std::endl;
 	std::cin >> input;
-	std::cout << "\n\n\n\n" << std::endl;
+	std::cout << "\n\n\n\n" << std::endl;*/
 	if (input >=0) {
 
 	//visualization_msgs::MarkerArray marker_array;

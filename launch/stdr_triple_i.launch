@@ -1,0 +1,19 @@
+<launch>
+	
+	<include file="$(find stdr_robot)/launch/robot_manager.launch"/>
+	
+	<node type="stdr_server_node" pkg="stdr_server" name="stdr_server" output="screen" args="$(find snowmower_sim)/maps/triple_i_map.yaml"/>
+
+	<node pkg="tf" type="static_transform_publisher" name="world2map" args="0 0 0 0 0 0  world map 100" />
+	
+	<!-- <include file="$(find stdr_gui)/launch/stdr_gui.launch"/> -->
+	<!-- <node pkg="stdr_gui" type="stdr_gui_node" name="$(anon stdr_gui_node)"/> -->
+        
+        <node pkg="rviz" type="rviz" name = "rviz" output="screen" args="-d $(find snowmower_sim)/launch/triple_i_rviz_config.rviz"/>
+
+	<node pkg="stdr_robot" type="robot_handler" name="$(anon robot_spawn)" args="add $(find snowmower_sim)/resources/robots/snowmower.yaml 8.1 14.9 -1.57079632679"/>
+
+	<node pkg="snowmower_steering" name="baskin_steering" type="baskin_steering" args="false" />
+	<node pkg="snowmower_steering" name="baskin_planner" type="baskin_planner" args="full_run 0.25 0.90" />
+
+</launch>
