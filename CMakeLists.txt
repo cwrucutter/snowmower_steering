@@ -117,7 +117,8 @@ include_directories(
 add_executable(simple_steering src/simple_steering.cpp)
 add_executable(PoseStamped_to_TF src/PoseStamped_to_TF.cpp)
 add_executable(baskin_steering src/baskin_steering.cpp)
-add_executable(baskin_steering_test src/baskin_steering_test.cpp)
+add_executable(test_fixture_waypoints src/test_fixture_waypoints.cpp)
+add_executable(test_fixture_obstacle src/test_fixture_obstacle.cpp)
 add_executable(baskin_planner src/baskin_planner.cpp)
 
 ## Add cmake target dependencies of the executable/library
@@ -131,7 +132,8 @@ add_executable(baskin_planner src/baskin_planner.cpp)
 target_link_libraries(simple_steering ${catkin_LIBRARIES})
 target_link_libraries(PoseStamped_to_TF ${catkin_LIBRARIES})
 target_link_libraries(baskin_steering ${catkin_LIBRARIES})
-target_link_libraries(baskin_steering_test ${catkin_LIBRARIES})
+target_link_libraries(test_fixture_waypoints ${catkin_LIBRARIES})
+target_link_libraries(test_fixture_obstacle ${catkin_LIBRARIES})
 target_link_libraries(baskin_planner ${catkin_LIBRARIES})
 
 #############
