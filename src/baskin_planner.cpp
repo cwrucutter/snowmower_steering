@@ -90,8 +90,8 @@ float64 v_depart
 
 */
 	//TODO set to zero for actual robot
-	double map_shift_x = 2.0;
-	double map_shift_y = 2.0;
+	double map_shift_x = 0.0;
+	double map_shift_y = 0.0;
 	
 	
 	c.v_arrive = 0.0;
