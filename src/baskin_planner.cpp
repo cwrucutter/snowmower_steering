@@ -23,6 +23,8 @@ bool sim_mode = true;
 int plow_left = 0;
 int plow_center = 128;
 int plow_right = 255;
+int plow_sleep_time = 10;
+int default_sleep_time = 2;
 
 geometry_msgs::Pose robot_pose;
 
@@ -93,6 +95,7 @@ float64 v_depart
 	p.orientation.x = 0.0;
 	p.orientation.y = 0.0;
 	p.orientation.z = 1.0;
+	c.sleep_time = 3;
 
 	if(strcmp(arg_name, "full_run") ==0) {
 		///* repeat plow loop
@@ -100,15 +103,17 @@ float64 v_depart
 		c.pose.position.y = 15.5;
 		c.pose.orientation.w = 1.58;
 		c.plow_angle = plow_left;
+		c.sleep_time = plow_sleep_time;
 
 		waypoints.insert(waypoints.end(), c);
 		ROS_INFO("Setting up test..... ....");
 
-			p.position.x = 8.0;
-			p.position.y = 15.0;
-			p.orientation.w = -1.58;
+		p.position.x = 8.0;
+		p.position.y = 15.0;
+		p.orientation.w = -1.58;
 		c.pose = p;
 		c.plow_angle = plow_center;
+		c.sleep_time = plow_sleep_time;
 		ROS_INFO("c.plow angle %d" , c.plow_angle);
 		waypoints.insert(waypoints.end(), c);
 
@@ -118,6 +123,7 @@ float64 v_depart
 		c.pose.position.y = 14.0;
 		c.pose.orientation.w = -1.58;
 		c.plow_angle = plow_left;
+		c.sleep_time = plow_sleep_time;
 	
 		waypoints.insert(waypoints.end(), c);
 		ROS_INFO("Setting up test.");
@@ -126,6 +132,7 @@ float64 v_depart
 		c.pose.position.y = 14.0-(m*.5);
 		c.pose.orientation.w = 3.14;
 		c.plow_angle = plow_left;
+		c.sleep_time = default_sleep_time;
 	
 		waypoints.insert(waypoints.end(), c);
 		ROS_INFO("Setting up test..");
@@ -134,6 +141,7 @@ float64 v_depart
 		c.pose.position.y = 14.0-(m*.5);
 		c.pose.orientation.w = 3.14;
 		c.plow_angle = plow_right;
+		c.sleep_time = plow_sleep_time;
 	
 		waypoints.insert(waypoints.end(), c);
 		ROS_INFO("Setting up test...");
@@ -142,6 +150,7 @@ float64 v_depart
 		c.pose.position.y = 14.0-(m*1.5);
 		c.pose.orientation.w = 0.0;
 		c.plow_angle = plow_right;
+		c.sleep_time = default_sleep_time;
 
 		waypoints.insert(waypoints.end(), c);
 		ROS_INFO("Setting up test....");
@@ -154,20 +163,23 @@ float64 v_depart
 			c.pose.position.y = 14.0-((2.0*i-.5)*m);
 			c.pose.orientation.w = 0.0;
 			c.plow_angle = plow_left;
-	
+			c.sleep_time = plow_sleep_time;
+
 			waypoints.insert(waypoints.end(), c);
 			//%1
 			c.pose.position.x = 7.0+n;	
 			c.pose.position.y = 14.0-((2.0*i+.5)*m);
 			c.pose.orientation.w = 3.14;
 			c.plow_angle = plow_left;
-	
+			c.sleep_time = default_sleep_time;	
+
 			waypoints.insert(waypoints.end(), c);
 			//%2
 			c.pose.position.x = 4.0-n;	
 			c.pose.position.y = 14.0-((2.0*i+.5)*m);
 			c.pose.orientation.w = 3.14;
 			c.plow_angle = plow_right;
+			c.sleep_time = plow_sleep_time;
 
 			waypoints.insert(waypoints.end(), c);
 			//%3
@@ -175,6 +187,7 @@ float64 v_depart
 			c.pose.position.y = 14.0-((2.0*i+1.5)*m);
 			c.pose.orientation.w = 0.0;
 			c.plow_angle = plow_right;
+			c.sleep_time = default_sleep_time;
 
 			waypoints.insert(waypoints.end(), c);
 			ROS_INFO("Setting up w/ loop");
@@ -369,7 +382,7 @@ int main(int argc, char** argv) {
 	
 	start_pose_pub.publish(waypoints[(waypoints_index+0)%waypoints.size()]);
 	end_pose_pub.publish(waypoints[(waypoints_index+1)%waypoints.size()]);
-	ROS_INFO("Published first waypoint.");
+	ROS_INFO("Published first waypoint. waypoints.size() = %d", (int) (waypoints.size()));
 
 	while(ros::ok())
 	{

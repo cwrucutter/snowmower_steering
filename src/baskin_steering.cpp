@@ -120,6 +120,7 @@ void startPoseCB(const snowmower_steering::CmdPose& cmd) {
 	start_pose.v_arrive = cmd.v_arrive;
 	start_pose.v_depart = cmd.v_depart;
 	start_pose.plow_angle = cmd.plow_angle;
+	start_pose.sleep_time = cmd.sleep_time;
 	try {
 		jackie.data = start_pose.plow_angle;
 		//ROS_INFO("|||| plow angle from start pose: %d ||||", jackie.data);
@@ -245,20 +246,22 @@ void update(ros::Publisher& feedback_pub, ros::Publisher& output_pub) {
 				feedback.data = "next";
 				//super_debug = true;
 				feedback_pub.publish(feedback);
+				ROS_INFO("msg: Next out");
 				control_output.linear.x = 0.0;
 				control_output.angular.z = 0.0;
 				output_pub.publish(control_output);
 				ros::Rate joe(1);
-				joe.sleep();
 				ros::spinOnce();
-				joe.sleep();
-				ros::spinOnce();
-				joe.sleep();
-				ros::spinOnce();
-				joe.sleep();
+				ROS_INFO("joe.sleep start. sleeping for %d", (int) (start_pose.sleep_time));
+				for(int i = 0; i < start_pose.sleep_time; i++) {
+					ros::spinOnce();
+					joe.sleep();
+				}
 				ros::spinOnce();
 				ROS_INFO("end joe sleep");
 				feedback.data = "repeat";
+				feedback_pub.publish(feedback);
+				ROS_INFO("msg: Repeat out");
 				d_angle = 0.0;
 				d_distance = 0.0;
 			}
