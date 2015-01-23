@@ -9,7 +9,7 @@
 	<!-- <include file="$(find stdr_gui)/launch/stdr_gui.launch"/> -->
 	<!-- <node pkg="stdr_gui" type="stdr_gui_node" name="$(anon stdr_gui_node)"/> -->
         
-        <node pkg="rviz" type="rviz" name = "rviz" output="screen" args="-d $(find snowmower_sim)/launch/triple_i_rviz_config.rviz"/>
+        <node pkg="rviz" type="rviz" name = "rviz" output="screen" args="-d $(find snowmower_steering)/launch/triple_i_rviz_config.rviz"/>
 
 	<node pkg="stdr_robot" type="robot_handler" name="$(anon robot_spawn)" args="add $(find snowmower_sim)/resources/robots/snowmower.yaml 8.1 14.9 -1.57079632679"/>
 
