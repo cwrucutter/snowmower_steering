@@ -44,9 +44,12 @@ void synthetic_obstacle(double x, double y) {
 void update_obstacle() {
 	double dx = obs_x - robot_pose.position.x;
 	double dy = obs_y - robot_pose.position.y;
-	double dth = atan2(obs_y, obs_x);
+	double dth = atan2(dy, dx);
 	msg.theta = dth - robot_heading;
 	msg.r = dist(robot_pose.position.x, robot_pose.position.y, obs_x, obs_y);
+	std::stringstream ss;
+	ss << "update --> obstacle x: " << dx << " y: " << dy << "\n t: " << msg.theta << " dth: " << dth << "";
+	ROS_INFO("%s", ss.str().c_str());
 }
 
 /*
@@ -91,12 +94,13 @@ int main(int argc, char** argv) {
 	ros::init(argc,argv,"test_fixture_obstacle");
 	if(argc > 2) {
 		synthetic_obstacle(atof(*(argv+1)), atof(*(argv+2)));
+		ROS_INFO("Obstacle created");
 	}
 	else {
 		return 0;
 	}
 	ros::NodeHandle n;
-	ros::Rate timer(20);
+	ros::Rate timer(10);
 	ROS_INFO("ROS init for obstacle testing");
 	
 	//TODO
@@ -109,6 +113,7 @@ int main(int argc, char** argv) {
 	
 	while(ros::ok()) {
 		update_obstacle();
+		obstacle_pub.publish(msg);
 		ros::spinOnce();
 	}
 }

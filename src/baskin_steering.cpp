@@ -5,6 +5,7 @@
 #include <std_msgs/UInt8.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -40,6 +41,9 @@ bool debug_speed = false;
 bool simple_mode = false;
 bool ignore_obstacles = false;
 
+bool gps_only = false;
+bool ignore_heading = false;
+
 double d_distance;
 double d_angle;
 double k1 = 0.5; //linear adjustment coefficient
@@ -47,7 +51,7 @@ double k2 = 1.0; //angular adjustment coefficient
 
 double k_stable = 2.0; //depart/arrive strength
 
-double max_v = 2.0;
+double max_v = 1.0;
 double max_w = 1.0;
 
 geometry_msgs::Twist control_output; // linear.x = forward, angular.z = turn
@@ -171,6 +175,15 @@ geometry_msgs/PoseWithCovariance pose
 	robot_pose.orientation = msg.pose.pose.orientation;
 	robot_flag = true;
 }
+void robotGPSPoseCB(const geometry_msgs::PoseStamped& msg) {
+	robot_heading = 2.0*acos(msg.pose.orientation.w);
+	if (msg.pose.orientation.x < 0.0 || msg.pose.orientation.y < 0.0 || msg.pose.orientation.z < 0.0) {
+		robot_heading = -robot_heading;
+	}
+	robot_pose.position = msg.pose.position;
+	robot_pose.orientation = msg.pose.orientation;
+	robot_flag = true;
+}
 void robotRealPoseCB(const geometry_msgs::PoseWithCovariance& msg) {
 	std::stringstream ss;
 	ss << "Recieved new robot-estim pose [" << msg.pose.position.x << "," << msg.pose.position.y << ", +-" << 
@@ -239,7 +252,7 @@ void update(ros::Publisher& feedback_pub, ros::Publisher& output_pub) {
 			if(turn >= pi) { turn = -2.0*pi + turn; }
 			if(turn <= -pi) { turn = 2.0*pi + turn; }
 
-			if (std::abs(turn) < 0.03) {
+			if (std::abs(turn) < 0.03 || ignore_heading) {
 				//at goal orientation w/in 3 degrees
 				int turn_min = std::abs(turn) < 0.03;
 				std::stringstream s2;
@@ -323,7 +336,7 @@ double evaluate_point(double x, double y, double theta) {
 	double arr = arrive_component(x,y,theta);
 	double mov = motive_component(x,y,theta);
 	double obs = obstacle_component(x,y,theta);
-	if (debug_methods || false) { 
+	if (debug_methods || super_debug) { 
 		ROS_INFO("---- evaluate_point");
 		std::stringstream ss;
 		ss << "\n      + dep: " << dep_gain(x,y,theta) << "*" << dep << " " << (dep/3.14*180.0) << "\n      + arr: " << arr_gain(x,y,theta) << "*" << arr << " " << (arr/3.14*180.0) << "\n      + mov: "  << mov_gain(x,y,theta) << "*" << mov << " " << (mov/3.14*180.0) << "\n      + obs: " << obs_gain(x,y,theta) << "*" << obs << " " << (obs/3.14*180.0) << "" ;
@@ -421,8 +434,9 @@ double obstacle_component(double x, double y, double theta) {
 	double dy = 0.0;
 
 	for (int i = 0; i < obstacles.size(); i++) {
-		dx = dx + std::min(1.0,obstacles[i].size/pow(obstacles[i].r, 3.0))*cos(obstacles[i].theta);
-		dy = dy + std::min(1.0,obstacles[i].size/pow(obstacles[i].r, 3.0))*sin(obstacles[i].theta);
+		ROS_INFO("obstacle num %d", i+1);
+		dx = dx + std::min(1.0,obstacles[i].size/pow(obstacles[i].r, 3.0))*cos(obstacles[i].theta+3.14+robot_heading);
+		dy = dy + std::min(1.0,obstacles[i].size/pow(obstacles[i].r, 3.0))*sin(obstacles[i].theta+3.14+robot_heading);
 	}
 	// error or no obstacle effect
 	if (std::abs(dx) <= 0.03 && std::abs(dy) <= 0.03) {
@@ -437,7 +451,7 @@ double obstacle_component(double x, double y, double theta) {
 }
 double obs_gain(double x, double y, double theta) {
 	if(simple_mode || ignore_obstacles) return 0.0;
-	return 3.0;
+	return 0.5;
 }
 void convert_to_twist() {
 	//takes controller input and makes it into a Twist

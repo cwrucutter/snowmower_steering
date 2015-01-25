@@ -120,6 +120,7 @@ add_executable(baskin_steering src/baskin_steering.cpp)
 add_executable(test_fixture_waypoints src/test_fixture_waypoints.cpp)
 add_executable(test_fixture_obstacle src/test_fixture_obstacle.cpp)
 add_executable(baskin_planner src/baskin_planner.cpp)
+add_executable(baskin_dr src/baskin_dr.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -135,6 +136,7 @@ target_link_libraries(baskin_steering ${catkin_LIBRARIES})
 target_link_libraries(test_fixture_waypoints ${catkin_LIBRARIES})
 target_link_libraries(test_fixture_obstacle ${catkin_LIBRARIES})
 target_link_libraries(baskin_planner ${catkin_LIBRARIES})
+target_link_libraries(baskin_dr ${catkin_LIBRARIES})
 
 #############
 ## Install ##
