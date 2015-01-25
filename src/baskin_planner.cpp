@@ -121,8 +121,9 @@ float64 v_depart
 		field_y_min = 3.0;
 		field_y_max = 13.0;
 	}
-
-	if(strcmp(arg_name, "full_run_plow") ==0) {
+	ROS_INFO("Start compare");
+	ROS_INFO("arg_name: %s", arg_name);
+	if(strcmp(arg_name, "full_run_plow") == 0) {
 		///* repeat plow loop
 		c.pose.position.x = field_x_max+0.5+map_shift_x;	
 		c.pose.position.y = 2.0+map_shift_y;
@@ -228,8 +229,9 @@ float64 v_depart
 
 		//*/
 	}
-	else if (strcmp(arg_name, "full_run_noplow") ) {
+	else if (true || strcmp(arg_name, "full_run_noplow") ) {
 		///* repeat plow loop
+		ROS_INFO("in full_run_noplow loop");
 		c.pose.position.x = field_x_max+0.5+map_shift_x;	
 		c.pose.position.y = 2.0+map_shift_y;
 		c.pose.orientation.w = -1.58;
@@ -618,11 +620,12 @@ int main(int argc, char** argv) {
 	ros::Subscriber plow_angle_sub = n.subscribe ("/plow/angle", 1, plowCB);
 
 	ROS_INFO("Publishers and Subscribers set.");
-	
+	ROS_INFO("Waypoints index: %d", waypoints_index);
+
 	start_pose_pub.publish(waypoints[(waypoints_index+0)%waypoints.size()]);
+	ROS_INFO("split_publishers");
 	end_pose_pub.publish(waypoints[(waypoints_index+1)%waypoints.size()]);
 	ROS_INFO("Published first waypoint. waypoints.size() = %d", (int) (waypoints.size()));
-	ROS_INFO("Waypoints index: %d", waypoints_index);
 	ROS_INFO("start_x %f", waypoints[(waypoints_index+0)%waypoints.size()].pose.position.x);
 	ROS_INFO("end_x %f", waypoints[(waypoints_index+1)%waypoints.size()].pose.position.x);
 
