@@ -91,8 +91,8 @@ float64 v_depart
 
 */
 	//TODO set to zero for actual robot
-	double map_shift_x = 2.0;
-	double map_shift_y = 2.0;
+	double map_shift_x = 0.0;
+	double map_shift_y = 0.0;
 	
 	
 	c.v_arrive = 0.0;
@@ -627,7 +627,9 @@ int main(int argc, char** argv) {
 	end_pose_pub.publish(waypoints[(waypoints_index+1)%waypoints.size()]);
 	ROS_INFO("Published first waypoint. waypoints.size() = %d", (int) (waypoints.size()));
 	ROS_INFO("start_x %f", waypoints[(waypoints_index+0)%waypoints.size()].pose.position.x);
+	ROS_INFO("start_y %f", waypoints[(waypoints_index+0)%waypoints.size()].pose.position.y);
 	ROS_INFO("end_x %f", waypoints[(waypoints_index+1)%waypoints.size()].pose.position.x);
+	ROS_INFO("end_y %f", waypoints[(waypoints_index+1)%waypoints.size()].pose.position.y);
 
 	while(ros::ok())
 	{

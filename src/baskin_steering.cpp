@@ -176,12 +176,12 @@ geometry_msgs/PoseWithCovariance pose
 	robot_flag = true;
 }
 void robotGPSPoseCB(const geometry_msgs::PoseStamped& msg) {
-	robot_heading = 2.0*acos(msg.pose.orientation.w);
+//	robot_heading = 2.0*acos(msg.pose.orientation.w);
 	if (msg.pose.orientation.x < 0.0 || msg.pose.orientation.y < 0.0 || msg.pose.orientation.z < 0.0) {
-		robot_heading = -robot_heading;
+//		robot_heading = -robot_heading;
 	}
 	robot_pose.position = msg.pose.position;
-	robot_pose.orientation = msg.pose.orientation;
+//	robot_pose.orientation = msg.pose.orientation;
 	robot_flag = true;
 }
 void robotRealPoseCB(const geometry_msgs::PoseWithCovariance& msg) {
@@ -199,7 +199,7 @@ geometry_msgs/Pose pose
   geometry_msgs/Point position
   geometry_msgs/Quaternion orientation
 */
-	robot_pose.position = msg.pose.position;
+//	robot_pose.position = msg.pose.position;
 	robot_pose.orientation = msg.pose.orientation;
 	robot_flag = true;
 }
@@ -526,12 +526,18 @@ int main(int argc, char** argv) {
 	ros::Publisher feedback_pub = n.advertise<std_msgs::String>("/steering/feedback",1);
 	ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker",1);
 	plow_angle_pub = n.advertise<std_msgs::UInt8>("/plow/angle",1);
+
+	if(!gps_only) {
 	ros::Subscriber sub_start = n.subscribe ("/steering/start_pose", 1, startPoseCB);
 	ros::Subscriber sub_end = n.subscribe ("/steering/end_pose", 1, endPoseCB);
 	ros::Subscriber sub_robot = n.subscribe ("/steering/robot_pose", 1, robotPoseCB);
 	ros::Subscriber sub_robot_odom = n.subscribe ("/robot0/odom", 1, robotSimPoseCB);
 	ros::Subscriber sub_robot_est = n.subscribe ("/pose_est" , 1, robotRealPoseCB);
 	ros::Subscriber sub_obstacle = n.subscribe ("/steering/obstacle", 1, obstacleCB);
+	}
+	else {
+	ros::Subscriber sub_gps = n.subscribe ("/gps_pose", 1, robotGPSPoseCB);
+	}
 
 	ros::spinOnce();
 	d_distance = 1.0;
