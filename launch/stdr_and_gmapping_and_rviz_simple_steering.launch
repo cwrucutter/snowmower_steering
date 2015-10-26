@@ -1,0 +1,20 @@
+<launch>
+
+  <!-- Launch stdr simulator with gui -->
+  <include file="$(find stdr_launchers)/launch/server_with_map_and_gui_plus_robot.launch"/>
+
+  <!-- Run slam-gmapping node with parameter changes -->
+  <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
+    <param name="base_frame" value="robot0" type="string"/>
+    <remap from="map" to="gmap"/>
+    <remap from="scan" to="/robot0/laser_0"/>
+  </node>
+
+  <!-- Start rviz with corresponding config file -->
+  <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find snowmower_steering)/launch/stdr_gmapping_goalPose.rviz"/>
+
+  <!-- Start the PoseStamped_to_TF and simple_steering nodes -->
+  <node pkg="snowmower_steering" type="PoseStamped_to_TF" name="PoseStamped_to_TF" output="screen"/>
+  <node pkg="snowmower_steering" type="simple_steering" name="simple_steering" ouput="screen"/>
+
+</launch>
